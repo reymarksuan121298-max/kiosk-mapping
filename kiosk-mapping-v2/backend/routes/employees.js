@@ -55,6 +55,7 @@ function mapEmployee(emp) {
         franchise: emp.franchise,
         area: emp.area,
         status: emp.status,
+        radiusMeters: emp.radius_meters ? parseInt(emp.radius_meters) : 200,
         photoUrl: emp.photo_url,
         qrCode: emp.qr_code,
         createdBy: emp.created_by,
@@ -149,6 +150,7 @@ router.post('/', authorize(['admin']), async (req, res) => {
             franchise,
             area,
             status,
+            radiusMeters,
             photoUrl,
             qrCode
         } = req.body;
@@ -184,6 +186,7 @@ router.post('/', authorize(['admin']), async (req, res) => {
                     franchise,
                     area: area || 'LDN',
                     status: status || 'Active',
+                    radius_meters: radiusMeters || 200,
                     photo_url: photoUrl,
                     qr_code: qrCode,
                     created_by: req.user.id
@@ -221,6 +224,7 @@ router.put('/:id', authorize(['admin']), async (req, res) => {
             franchise,
             area,
             status,
+            radiusMeters,
             photoUrl,
             qrCode
         } = req.body;
@@ -250,6 +254,7 @@ router.put('/:id', authorize(['admin']), async (req, res) => {
                 franchise,
                 area,
                 status,
+                radius_meters: radiusMeters || 200,
                 photo_url: photoUrl,
                 qr_code: qrCode
             })
@@ -287,6 +292,18 @@ router.delete('/:id', authorize(['admin']), async (req, res) => {
 
         if (!employee) {
             return res.status(404).json({ error: 'Employee not found' });
+        }
+
+        // Explicitly delete attendance logs first (even if DB has cascade, this ensures it)
+        const { error: attendanceError } = await supabase
+            .from('attendance')
+            .delete()
+            .eq('employee_id', req.params.id);
+
+        if (attendanceError) {
+            console.error('Failed to clear attendance logs:', attendanceError);
+            // We continue anyway, or we could throw. Let's throw to be safe.
+            throw attendanceError;
         }
 
         // Delete employee

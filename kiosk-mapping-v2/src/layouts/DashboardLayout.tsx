@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Users, Map, LogOut, LayoutDashboard, FileText } from 'lucide-react';
+import { MapPin, Users, Map, LogOut, LayoutDashboard, FileText, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ModeToggle } from '@/components/mode-toggle';
@@ -9,6 +9,7 @@ const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Employees', href: '/dashboard/employees', icon: Users },
     { name: 'Map View', href: '/dashboard/map', icon: Map },
+    { name: 'Attendance', href: '/dashboard/attendance', icon: Clock },
     { name: 'Audit Logs', href: '/dashboard/audit', icon: FileText },
 ];
 

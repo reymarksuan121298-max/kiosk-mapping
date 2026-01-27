@@ -69,6 +69,7 @@ export interface Employee {
     franchise?: string;
     area?: string;
     status: 'Active' | 'Deactive';
+    radiusMeters?: number;
     photoUrl?: string;
     qrCode?: string;
     createdAt?: string;

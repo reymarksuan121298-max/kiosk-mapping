@@ -7,6 +7,7 @@ import DashboardPage from '@/pages/Dashboard';
 import EmployeesPage from '@/pages/Employees';
 import MapPage from '@/pages/Map';
 import AuditPage from '@/pages/Audit';
+import AttendanceTablePage from '@/pages/AttendanceTable';
 import '@/index.css';
 
 const queryClient = new QueryClient({
@@ -48,6 +49,7 @@ function App() {
               <Route index element={<DashboardPage />} />
               <Route path="employees" element={<EmployeesPage />} />
               <Route path="map" element={<MapPage />} />
+              <Route path="attendance" element={<AttendanceTablePage />} />
               <Route path="audit" element={<AuditPage />} />
             </Route>
 

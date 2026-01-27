@@ -43,7 +43,7 @@ router.post('/scan', async (req, res) => {
         // Find the employee by their custom employeeId (from QR)
         const { data: employees, error: empError } = await supabase
             .from('employees')
-            .select('id, full_name, employee_id, latitude, longitude, role, franchise, area, spvr')
+            .select('id, full_name, employee_id, latitude, longitude, radius_meters, role, franchise, area, spvr')
             .eq('employee_id', cleanId);
 
         if (empError) {
@@ -89,18 +89,20 @@ router.post('/scan', async (req, res) => {
                 parseFloat(employee.longitude)
             );
 
-            if (distance > ALERT_THRESHOLD) {
-                alertType = 'Location Alert';
+            const allowedRadius = employee.radius_meters || 200;
+
+            if (distance > allowedRadius) {
+                console.log(`❌ Geofence Breach: ${distance}m (Allowed: ${allowedRadius}m)`);
+                return res.status(403).json({
+                    error: "Your out of range on your registered coordinates",
+                    distance: distance,
+                    allowedRadius: allowedRadius
+                });
             }
         } else if (!latitude || !longitude) {
-            // Fallback to employee base location if no GPS provided (useful for simulator/kiosks)
-            finalLat = employee.latitude;
-            finalLon = employee.longitude;
-            distance = 0;
-
-            if (!employee.latitude || !employee.longitude) {
-                alertType = 'No Base Location';
-            }
+            return res.status(400).json({ error: 'GPS coordinates are required for verification' });
+        } else if (!employee.latitude || !employee.longitude) {
+            return res.status(400).json({ error: 'No registered coordinates found for this kiosk. Please contact admin.' });
         }
 
         // Insert attendance record
@@ -113,8 +115,9 @@ router.post('/scan', async (req, res) => {
                     longitude: finalLon || null,
                     distance_meters: distance,
                     alert_type: alertType,
-                    status: status || 'Active',
-                    remarks: remarks || null
+                    status: status,
+                    remarks: remarks || null,
+                    scan_source: 'kiosk_monitoring'
                 }
             ])
             .select()
@@ -184,6 +187,7 @@ router.get('/on-duty', async (req, res) => {
                     longitude
                 )
             `)
+            .eq('scan_source', 'kiosk_monitoring')
             .gt('scan_time', twelveHoursAgo)
             .order('scan_time', { ascending: false });
 
@@ -221,7 +225,12 @@ router.get('/history', async (req, res) => {
                 *,
                 employees!attendance_employee_id_fkey (
                     employee_id,
-                    full_name
+                    full_name,
+                    role,
+                    franchise,
+                    area,
+                    spvr,
+                    photo_url
                 )
             `)
             .order('scan_time', { ascending: false })

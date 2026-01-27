@@ -464,6 +464,11 @@ export default function MonitoringPage() {
                                             <div className="text-[10px] text-muted-foreground bg-slate-50 p-1 rounded font-mono mb-2">
                                                 {selectedRecord.latitude.toFixed(6)}, {selectedRecord.longitude.toFixed(6)}
                                             </div>
+                                            {selectedRecord.employees.photo_url && (
+                                                <div className="mt-2 w-full h-32 rounded-lg overflow-hidden border border-slate-200">
+                                                    <img src={selectedRecord.employees.photo_url} className="w-full h-full object-cover" alt="Station Preset" />
+                                                </div>
+                                            )}
                                             {selectedRecord.remarks && (
                                                 <div className="mt-2 p-2 bg-slate-100 rounded-lg border border-border/50">
                                                     <p className="text-[9px] text-muted-foreground uppercase font-bold text-left mb-1">Remarks:</p>
@@ -483,6 +488,11 @@ export default function MonitoringPage() {
                                             <Popup>
                                                 <div className="p-1 font-black">
                                                     <p className="uppercase tracking-tighter text-slate-800">Assigned Post</p>
+                                                    {selectedRecord.employees.photo_url && (
+                                                        <div className="my-2 w-32 h-24 rounded border overflow-hidden">
+                                                            <img src={selectedRecord.employees.photo_url} className="w-full h-full object-cover" alt="Target Station" />
+                                                        </div>
+                                                    )}
                                                     <p className="text-[10px] text-muted-foreground">Coordinates Verified</p>
                                                 </div>
                                             </Popup>

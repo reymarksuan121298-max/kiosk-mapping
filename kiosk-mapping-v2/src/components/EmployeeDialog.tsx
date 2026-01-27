@@ -59,6 +59,7 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
         longitude: undefined,
         franchise: franchises[0],
         status: 'Active',
+        radiusMeters: 200,
     });
 
     useEffect(() => {
@@ -82,6 +83,7 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                 franchise: franchises[0],
                 area: defaultArea,
                 status: 'Active',
+                radiusMeters: 200,
             });
         }
         setError('');
@@ -269,6 +271,19 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                                     </option>
                                 ))}
                             </select>
+                        </div>
+
+                        {/* Radius */}
+                        <div className="space-y-2">
+                            <Label htmlFor="radiusMeters">Allowed Radius (Meters)</Label>
+                            <Input
+                                id="radiusMeters"
+                                type="number"
+                                value={formData.radiusMeters || ''}
+                                onChange={(e) => handleChange('radiusMeters', e.target.value ? parseInt(e.target.value) : undefined)}
+                                placeholder="e.g. 200"
+                            />
+                            <p className="text-[10px] text-muted-foreground">Default is 200 meters if left blank.</p>
                         </div>
                     </div>
 
