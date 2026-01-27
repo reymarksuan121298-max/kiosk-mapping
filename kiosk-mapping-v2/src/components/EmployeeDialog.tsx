@@ -28,6 +28,7 @@ const franchises = [
     'Imperial Gaming OPC',
     '5a Royal Gaming OPC'
 ];
+const areas = ['LDN', 'BAL', 'ILI', 'LALA'];
 
 const getFranchisePrefix = (franchise: string) => {
     switch (franchise) {
@@ -38,9 +39,9 @@ const getFranchisePrefix = (franchise: string) => {
     }
 };
 
-const generateFormattedId = (prefix: string, count: number) => {
+const generateFormattedId = (prefix: string, area: string, count: number) => {
     const sequence = (count + 1).toString().padStart(5, '0');
-    return `${prefix}-LDN-${sequence}`;
+    return `${prefix}-${area}-${sequence}`;
 };
 
 export default function EmployeeDialog({ open, onClose, employee, totalCount = 0 }: EmployeeDialogProps) {
@@ -65,9 +66,10 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
             setFormData(employee);
             setPhotoPreview(employee.photoUrl || null);
         } else {
-            // Generate initial ID based on first franchise
+            // Generate initial ID based on first franchise and default area
             const prefix = getFranchisePrefix(franchises[0]);
-            const newId = generateFormattedId(prefix, totalCount);
+            const defaultArea = areas[0]; // 'LDN'
+            const newId = generateFormattedId(prefix, defaultArea, totalCount);
 
             setFormData({
                 employeeId: newId,
@@ -78,6 +80,7 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                 latitude: undefined,
                 longitude: undefined,
                 franchise: franchises[0],
+                area: defaultArea,
                 status: 'Active',
             });
         }
@@ -131,10 +134,11 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
         setFormData((prev) => {
             const newData = { ...prev, [field]: value };
 
-            // Auto-generate ID if franchise changes and we're adding a new employee
-            if (field === 'franchise' && !employee) {
-                const prefix = getFranchisePrefix(value);
-                newData.employeeId = generateFormattedId(prefix, totalCount);
+            // Auto-generate ID if franchise or area changes and we're adding a new employee
+            if ((field === 'franchise' || field === 'area') && !employee) {
+                const prefix = getFranchisePrefix(field === 'franchise' ? value : newData.franchise || franchises[0]);
+                const area = field === 'area' ? value : newData.area || areas[0];
+                newData.employeeId = generateFormattedId(prefix, area, totalCount);
             }
 
             return newData;
@@ -244,6 +248,24 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                                 {franchises.map((franchise) => (
                                     <option key={franchise} value={franchise}>
                                         {franchise}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Area */}
+                        <div className="space-y-2">
+                            <Label htmlFor="area">Area *</Label>
+                            <select
+                                id="area"
+                                value={formData.area || 'LDN'}
+                                onChange={(e) => handleChange('area', e.target.value)}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                required
+                            >
+                                {areas.map((area) => (
+                                    <option key={area} value={area}>
+                                        {area}
                                     </option>
                                 ))}
                             </select>

@@ -17,7 +17,9 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: process.env.NODE_ENV === 'production'
+        ? process.env.CORS_ORIGIN
+        : '*', // Allow all origins in development for mobile app
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -56,10 +58,11 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
+    console.log(`🔗 CORS enabled for: *`);
+    console.log(`🌐 Network: http://192.168.100.17:${PORT}`);
 });
 
 module.exports = app;

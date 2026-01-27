@@ -67,6 +67,7 @@ export interface Employee {
     latitude?: number;
     longitude?: number;
     franchise?: string;
+    area?: string;
     status: 'Active' | 'Deactive';
     photoUrl?: string;
     qrCode?: string;

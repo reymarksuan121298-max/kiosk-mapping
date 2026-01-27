@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS employees (
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
     franchise VARCHAR(255),
+    area VARCHAR(10) DEFAULT 'LDN',
     status VARCHAR(50) DEFAULT 'Active',
     photo_url TEXT,
     qr_code TEXT,
@@ -48,6 +49,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_employees_employee_id ON employees(employee_id);
 CREATE INDEX IF NOT EXISTS idx_employees_status ON employees(status);
+CREATE INDEX IF NOT EXISTS idx_employees_area ON employees(area);
 CREATE INDEX IF NOT EXISTS idx_employees_created_at ON employees(created_at);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);

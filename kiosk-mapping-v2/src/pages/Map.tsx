@@ -41,19 +41,43 @@ interface MapLocation {
     map_status: 'active' | 'today' | 'inactive' | 'pending';
 }
 
-const getMarkerIcon = (status: 'active' | 'today' | 'inactive' | 'pending') => {
-    let color = '#3b82f6'; // Default Blue (Pending)
+// Generate consistent color for each SPVR
+const getSPVRColor = (spvr: string | undefined) => {
+    if (!spvr) return '#94a3b8'; // Grey for no SPVR
+
+    // Hash the SPVR string to get a consistent color
+    let hash = 0;
+    for (let i = 0; i < spvr.length; i++) {
+        hash = spvr.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    // Predefined vibrant colors for common SPVRs
+    const colors = [
+        '#ef4444', // Red
+        '#f59e0b', // Amber
+        '#10b981', // Emerald
+        '#3b82f6', // Blue
+        '#8b5cf6', // Violet
+        '#ec4899', // Pink
+        '#14b8a6', // Teal
+        '#f97316', // Orange
+        '#06b6d4', // Cyan
+        '#6366f1', // Indigo
+    ];
+
+    return colors[Math.abs(hash) % colors.length];
+};
+
+const getMarkerIcon = (spvr: string | undefined, status: 'active' | 'today' | 'inactive' | 'pending') => {
+    // Use grey for pending/absent and inactive, SPVR color for active/today
+    const color = (status === 'pending' || status === 'inactive') ? '#94a3b8' : getSPVRColor(spvr);
     let pulseClass = '';
 
+    // Add pulse animation only for active status
     if (status === 'active') {
-        color = '#10b981'; // Green
-        pulseClass = 'marker-pulse-green';
-    } else if (status === 'inactive') {
-        color = '#ef4444'; // Red
-        pulseClass = 'marker-pulse-red';
-    } else if (status === 'today') {
-        color = '#64748b'; // Grey
+        pulseClass = 'marker-pulse';
     }
+    // No pulse for 'inactive', 'pending', or 'today'
 
     return L.divIcon({
         className: 'custom-marker',
@@ -152,9 +176,9 @@ export default function MapPage() {
     return (
         <div className="p-8 space-y-6">
             <style>{`
-                @keyframes pulse-green {
+                @keyframes pulse {
                     0% {
-                        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+                        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
                         transform: rotate(-45deg) scale(1);
                     }
                     50% {
@@ -162,27 +186,11 @@ export default function MapPage() {
                         opacity: 0.9;
                     }
                     100% {
-                        box-shadow: 0 0 0 15px rgba(16, 185, 129, 0);
+                        box-shadow: 0 0 0 15px rgba(255, 255, 255, 0);
                         transform: rotate(-45deg) scale(1);
                     }
                 }
-                .marker-pulse-green { animation: pulse-green 1.5s infinite ease-in-out; }
-                
-                @keyframes pulse-red {
-                    0% {
-                        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-                        transform: rotate(-45deg) scale(1);
-                    }
-                    50% {
-                        transform: rotate(-45deg) scale(1.15);
-                        opacity: 0.9;
-                    }
-                    100% {
-                        box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
-                        transform: rotate(-45deg) scale(1);
-                    }
-                }
-                .marker-pulse-red { animation: pulse-red 1.5s infinite ease-in-out; }
+                .marker-pulse { animation: pulse 1.5s infinite ease-in-out; }
             `}</style>
 
             {/* Header */}
@@ -217,36 +225,32 @@ export default function MapPage() {
                             {activeCount} active • {inactiveCount} no bot • {pendingCount} pending • {todayCount} processed today
                         </CardDescription>
                     </div>
-                    <div className="flex gap-4 text-xs md:text-sm font-medium flex-wrap">
+                    <div className="flex gap-3 text-xs md:text-sm font-medium flex-wrap">
                         <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span>Active</span>
+                            <span className="w-3 h-3 rounded-full animate-pulse border-2 border-white shadow-md" style={{ backgroundColor: '#10b981' }}></span>
+                            <span>Pulsing = Active</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
-                            <span>No Bot</span>
+                            <span className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ backgroundColor: '#ef4444' }}></span>
+                            <span className="text-muted-foreground">Color = SPVR</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-slate-500"></span>
-                            <span>Visited</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                            <span>Pending</span>
+                            <span className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ backgroundColor: '#94a3b8' }}></span>
+                            <span>Grey = Inactive/Absent</span>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
                     {loading ? (
-                        <div className="h-[650px] flex items-center justify-center text-muted-foreground">
+                        <div className="h-[1000px] flex items-center justify-center text-muted-foreground">
                             Loading map data...
                         </div>
                     ) : locations.length === 0 ? (
-                        <div className="h-[650px] flex items-center justify-center text-muted-foreground bg-muted/20">
+                        <div className="h-[1000px] flex items-center justify-center text-muted-foreground bg-muted/20">
                             No kiosks found with GPS coordinates.
                         </div>
                     ) : (
-                        <div className="h-[650px] relative">
+                        <div className="h-[1000px] relative">
                             <MapContainer
                                 center={center}
                                 zoom={12}
@@ -262,8 +266,8 @@ export default function MapPage() {
                                             center={[loc.employee.latitude!, loc.employee.longitude!]}
                                             radius={80}
                                             pathOptions={{
-                                                color: loc.map_status === 'active' ? '#10b981' : (loc.map_status === 'inactive' ? '#ef4444' : (loc.map_status === 'pending' ? '#3b82f6' : '#64748b')),
-                                                fillColor: loc.map_status === 'active' ? '#10b981' : (loc.map_status === 'inactive' ? '#ef4444' : (loc.map_status === 'pending' ? '#3b82f6' : '#64748b')),
+                                                color: (loc.map_status === 'pending' || loc.map_status === 'inactive') ? '#94a3b8' : getSPVRColor(loc.employee.spvr),
+                                                fillColor: (loc.map_status === 'pending' || loc.map_status === 'inactive') ? '#94a3b8' : getSPVRColor(loc.employee.spvr),
                                                 fillOpacity: 0.1,
                                                 weight: 1,
                                                 dashArray: (loc.map_status === 'active' || loc.map_status === 'inactive') ? undefined : '5,5'
@@ -271,13 +275,13 @@ export default function MapPage() {
                                         />
                                         <Marker
                                             position={[loc.employee.latitude!, loc.employee.longitude!]}
-                                            icon={getMarkerIcon(loc.map_status)}
+                                            icon={getMarkerIcon(loc.employee.spvr, loc.map_status)}
                                         >
-                                            <Popup>
-                                                <div className="p-1 min-w-[240px]">
+                                            <Popup maxWidth={360} minWidth={320}>
+                                                <div className="p-2 w-full">
                                                     {loc.employee.photoUrl && (
                                                         <div
-                                                            className="w-full h-40 mb-3 rounded-xl overflow-hidden border border-border group relative cursor-pointer shadow-sm"
+                                                            className="w-full h-48 mb-3 rounded-xl overflow-hidden border border-border group relative cursor-pointer shadow-sm"
                                                             onClick={() => setViewImage(loc.employee.photoUrl!)}
                                                         >
                                                             <img
@@ -316,10 +320,20 @@ export default function MapPage() {
 
                                                     <div className="grid grid-cols-2 gap-2 mb-3">
                                                         <div className="bg-accent/50 p-2 rounded-lg border border-border/50">
+                                                            <p className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">SPVR</p>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span
+                                                                    className="w-2.5 h-2.5 rounded-full"
+                                                                    style={{ backgroundColor: getSPVRColor(loc.employee.spvr) }}
+                                                                ></span>
+                                                                <p className="text-xs font-semibold">{loc.employee.spvr || 'N/A'}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="bg-accent/50 p-2 rounded-lg border border-border/50">
                                                             <p className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Role</p>
                                                             <p className="text-xs font-semibold">{loc.employee.role}</p>
                                                         </div>
-                                                        <div className="bg-accent/50 p-2 rounded-lg border border-border/50">
+                                                        <div className="bg-accent/50 p-2 rounded-lg border border-border/50 col-span-2">
                                                             <p className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Franchise</p>
                                                             <p className="text-xs font-semibold">{loc.employee.franchise}</p>
                                                         </div>
@@ -332,6 +346,14 @@ export default function MapPage() {
                                                                 ? `Last Scan: ${new Date(loc.scan_time).toLocaleTimeString()} `
                                                                 : 'No scans today'}
                                                         </span>
+                                                    </div>
+
+                                                    {/* GPS Coordinates */}
+                                                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-900/30">
+                                                        <p className="text-[10px] text-blue-700 dark:text-blue-400 uppercase font-black mb-1 tracking-tighter">GPS Coordinates</p>
+                                                        <div className="flex items-center gap-2 text-[11px] font-mono font-semibold text-slate-700 dark:text-slate-300">
+                                                            <span>📍 {loc.employee.latitude?.toFixed(6)}, {loc.employee.longitude?.toFixed(6)}</span>
+                                                        </div>
                                                     </div>
 
                                                     {loc.remarks && (

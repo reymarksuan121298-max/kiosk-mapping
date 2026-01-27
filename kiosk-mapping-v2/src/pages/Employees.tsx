@@ -10,6 +10,33 @@ import EmployeeDialog from '@/components/EmployeeDialog';
 import { QRCodeCanvas as QRCode } from 'qrcode.react';
 import ReactBarcode from 'react-barcode';
 
+// Generate consistent color for each SPVR (same as Map.tsx)
+const getSPVRColor = (spvr: string | undefined) => {
+    if (!spvr) return '#94a3b8'; // Grey for no SPVR
+
+    // Hash the SPVR string to get a consistent color
+    let hash = 0;
+    for (let i = 0; i < spvr.length; i++) {
+        hash = spvr.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    // Predefined vibrant colors for common SPVRs
+    const colors = [
+        '#ef4444', // Red
+        '#f59e0b', // Amber
+        '#10b981', // Emerald
+        '#3b82f6', // Blue
+        '#8b5cf6', // Violet
+        '#ec4899', // Pink
+        '#14b8a6', // Teal
+        '#f97316', // Orange
+        '#06b6d4', // Cyan
+        '#6366f1', // Indigo
+    ];
+
+    return colors[Math.abs(hash) % colors.length];
+};
+
 export default function EmployeesPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
@@ -271,7 +298,7 @@ export default function EmployeesPage() {
                                         <th className="text-left p-4 font-medium text-muted-foreground">ID</th>
                                         <th className="text-left p-4 font-medium text-muted-foreground">Name</th>
                                         <th className="text-left p-4 font-medium text-muted-foreground">Franchise</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">SPVR</th>
+                                        <th className="text-left p-4 font-medium text-muted-foreground">Group</th>
                                         <th className="text-left p-4 font-medium text-muted-foreground">Role</th>
                                         <th className="text-left p-4 font-medium text-muted-foreground">Address</th>
                                         <th className="text-left p-4 font-medium text-muted-foreground">GPS</th>
@@ -286,7 +313,18 @@ export default function EmployeesPage() {
                                             <td className="p-4 font-mono text-sm">{employee.employeeId}</td>
                                             <td className="p-4 font-medium">{employee.fullName}</td>
                                             <td className="p-4 text-sm font-medium text-primary/80">{employee.franchise || '-'}</td>
-                                            <td className="p-4 text-sm">{employee.spvr || '-'}</td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span
+                                                        className="w-4 h-4 rounded-full border-2 border-white shadow-md"
+                                                        style={{ backgroundColor: getSPVRColor(employee.spvr) }}
+                                                        title={employee.spvr || 'No SPVR'}
+                                                    ></span>
+                                                    <span className="text-xs font-medium text-muted-foreground">
+                                                        {employee.spvr || 'N/A'}
+                                                    </span>
+                                                </div>
+                                            </td>
                                             <td className="p-4">
                                                 <span className="px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
                                                     {employee.role}

@@ -20,7 +20,19 @@ export default function LoginScreen() {
         try {
             await login(email, password);
         } catch (error: any) {
-            Alert.alert('Login Failed', error.response?.data?.message || 'Something went wrong');
+            console.error('Login error:', error);
+
+            let errorMessage = 'Something went wrong';
+
+            if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+                errorMessage = 'Cannot connect to server. Please check:\n\n1. Backend is running on port 5000\n2. Your device can reach the server\n3. API_URL in config.ts is correct';
+            } else if (error.response) {
+                errorMessage = error.response.data?.error || error.response.data?.message || 'Invalid credentials';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            Alert.alert('Login Failed', errorMessage);
         } finally {
             setIsSubmitting(false);
         }

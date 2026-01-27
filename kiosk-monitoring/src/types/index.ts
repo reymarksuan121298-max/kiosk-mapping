@@ -14,6 +14,7 @@ export interface Employee {
     fullName: string;
     role: string;
     franchise: string;
+    area?: string;
     photoUrl?: string; // Important for displaying photo after scan
 }
 

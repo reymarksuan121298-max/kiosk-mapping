@@ -53,6 +53,7 @@ function mapEmployee(emp) {
         latitude: emp.latitude ? parseFloat(emp.latitude) : null,
         longitude: emp.longitude ? parseFloat(emp.longitude) : null,
         franchise: emp.franchise,
+        area: emp.area,
         status: emp.status,
         photoUrl: emp.photo_url,
         qrCode: emp.qr_code,
@@ -146,6 +147,7 @@ router.post('/', authorize(['admin']), async (req, res) => {
             latitude,
             longitude,
             franchise,
+            area,
             status,
             photoUrl,
             qrCode
@@ -180,6 +182,7 @@ router.post('/', authorize(['admin']), async (req, res) => {
                     latitude,
                     longitude,
                     franchise,
+                    area: area || 'LDN',
                     status: status || 'Active',
                     photo_url: photoUrl,
                     qr_code: qrCode,
@@ -216,6 +219,7 @@ router.put('/:id', authorize(['admin']), async (req, res) => {
             latitude,
             longitude,
             franchise,
+            area,
             status,
             photoUrl,
             qrCode
@@ -244,6 +248,7 @@ router.put('/:id', authorize(['admin']), async (req, res) => {
                 latitude,
                 longitude,
                 franchise,
+                area,
                 status,
                 photo_url: photoUrl,
                 qr_code: qrCode

@@ -41,22 +41,38 @@ router.post('/scan', async (req, res) => {
         console.log(`Searching for Employee ID: "${cleanId}"`);
 
         // Find the employee by their custom employeeId (from QR)
-        const { data: employee, error: empError } = await supabase
+        const { data: employees, error: empError } = await supabase
             .from('employees')
-            .select('id, full_name, employee_id, latitude, longitude')
-            .eq('employee_id', cleanId)
-            .single();
+            .select('id, full_name, employee_id, latitude, longitude, role, franchise, area, spvr')
+            .eq('employee_id', cleanId);
 
         if (empError) {
             console.error('Database Error finding employee:', empError);
+            return res.status(500).json({ error: 'Database error: ' + empError.message });
         }
 
-        if (!employee) {
+        console.log(`Query returned ${employees?.length || 0} results`);
+
+        if (!employees || employees.length === 0) {
             console.log('❌ Employee NOT found in DB');
-            return res.status(404).json({ error: `Employee not found: ${cleanId}` });
+            console.log('Attempted ID:', cleanId);
+
+            // Try to find similar IDs for debugging
+            const { data: allIds } = await supabase
+                .from('employees')
+                .select('employee_id')
+                .limit(5);
+
+            console.log('Sample IDs in database:', allIds?.map(e => e.employee_id));
+
+            return res.status(404).json({
+                error: `Employee not found: ${cleanId}`,
+                hint: 'Check if the employee ID format matches the database'
+            });
         }
 
-        console.log('✅ Employee FOUND:', employee.full_name);
+        const employee = employees[0];
+        console.log('✅ Employee FOUND:', employee.full_name, `(${employee.employee_id})`);
 
         // Calculate distance if coordinates provided
         let distance = null;
@@ -118,16 +134,26 @@ router.post('/scan', async (req, res) => {
                     name: employee.full_name,
                     distance: distance,
                     alert: alertType,
-                    remarks: remarks || null
+                    remarks: remarks || null,
+                    area: employee.area || null
                 }
             }
         ]);
 
         res.status(201).json({
             message: alertType ? `Scan recorded with alert: ${alertType}` : 'Scan recorded successfully',
-            employee: employee,
+            employee: {
+                id: employee.id,
+                employeeId: employee.employee_id,
+                fullName: employee.full_name,
+                role: employee.role,
+                franchise: employee.franchise,
+                area: employee.area,
+                spvr: employee.spvr
+            },
             attendance: attendance,
-            alert: alertType
+            alert: alertType,
+            distance: distance
         });
     } catch (error) {
         console.error('Scan error:', error);
