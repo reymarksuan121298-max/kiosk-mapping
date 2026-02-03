@@ -189,8 +189,7 @@ export default function EmployeesPage() {
                 const url = canvas.toDataURL('image/png');
                 const link = document.createElement('a');
                 link.href = url;
-                const fileName = `QR_${selectedEmployee.fullName.replace(/\s+/g, '_')}.png`;
-                link.download = fileName;
+                link.download = `QR_${selectedEmployee.employeeId}.png`;
                 link.click();
             } else {
                 // For SVG barcode
@@ -205,8 +204,7 @@ export default function EmployeesPage() {
                     const url = canvas.toDataURL('image/png');
                     const link = document.createElement('a');
                     link.href = url;
-                    const fileName = `Barcode_${selectedEmployee.fullName.replace(/\s+/g, '_')}.png`;
-                    link.download = fileName;
+                    link.download = `Barcode_${selectedEmployee.employeeId}.png`;
                     link.click();
                 };
                 img.src = 'data:image/svg+xml;base64,' + btoa(svgData);

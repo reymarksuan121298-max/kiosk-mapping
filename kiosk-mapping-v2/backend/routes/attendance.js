@@ -33,46 +33,61 @@ router.post('/clock-in', async (req, res) => {
             return res.status(400).json({ error: 'Employee ID is required' });
         }
 
-        // Time Window Validation
-        const now = new Date();
-        const hour = now.getHours();
-        const minute = now.getMinutes();
-        const currentTimeInMinutes = hour * 60 + minute;
+        // Time Window Validation (can be disabled for testing)
+        const SKIP_TIME_VALIDATION = process.env.SKIP_TIME_VALIDATION === 'true';
 
-        if (type === 'Time In') {
-            const startLimit = 6 * 60; // 06:00
-            const endLimit = 8 * 60 + 30; // 08:30
-            if (currentTimeInMinutes < startLimit || currentTimeInMinutes > endLimit) {
-                return res.status(403).json({
-                    error: "Time In is only allowed between 6:00 AM and 8:30 AM"
-                });
+        if (!SKIP_TIME_VALIDATION) {
+            const now = new Date();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            const currentTimeInMinutes = hour * 60 + minute;
+
+            if (type === 'Time In') {
+                const startLimit = 6 * 60; // 06:00
+                const endLimit = 8 * 60 + 30; // 08:30
+                if (currentTimeInMinutes < startLimit || currentTimeInMinutes > endLimit) {
+                    console.log(`⏰ Time validation failed: Current time ${hour}:${minute} is outside 6:00-8:30 AM window`);
+                    return res.status(403).json({
+                        error: "Time In is only allowed between 6:00 AM and 8:30 AM"
+                    });
+                }
+            } else if (type === 'Time Out') {
+                const startLimit = 20 * 60 + 30; // 20:30 (8:30 PM)
+                const endLimit = 21 * 60; // 21:00 (9:00 PM)
+                if (currentTimeInMinutes < startLimit || currentTimeInMinutes > endLimit) {
+                    console.log(`⏰ Time validation failed: Current time ${hour}:${minute} is outside 8:30-9:00 PM window`);
+                    return res.status(403).json({
+                        error: "Time Out is only allowed between 8:30 PM and 9:00 PM"
+                    });
+                }
             }
-        } else if (type === 'Time Out') {
-            const startLimit = 20 * 60 + 30; // 20:30 (8:30 PM)
-            const endLimit = 21 * 60; // 21:00 (9:00 PM)
-            if (currentTimeInMinutes < startLimit || currentTimeInMinutes > endLimit) {
-                return res.status(403).json({
-                    error: "Time Out is only allowed between 8:30 PM and 9:00 PM"
-                });
-            }
+        } else {
+            console.log('⚠️ TIME VALIDATION DISABLED - Testing mode');
         }
 
         // Clean the ID
         const cleanId = employeeId.trim();
 
         // Find the employee
+        console.log('🔍 Searching for employee with ID:', cleanId);
         const { data: employees, error: empError } = await supabase
             .from('employees')
             .select('id, full_name, employee_id, latitude, longitude, radius_meters, role, franchise, area, spvr, photo_url')
             .eq('employee_id', cleanId);
 
+        console.log('Database query result:', {
+            found: employees?.length || 0,
+            error: empError,
+            employees: employees
+        });
+
         if (empError) {
-            console.error('Database Error:', empError);
+            console.error('❌ Database Error:', empError);
             return res.status(500).json({ error: 'Database error' });
         }
 
         if (!employees || employees.length === 0) {
-            console.log('❌ Employee NOT found');
+            console.log('❌ Employee NOT found with ID:', cleanId);
             return res.status(404).json({ error: `Employee not found: ${cleanId}` });
         }
 

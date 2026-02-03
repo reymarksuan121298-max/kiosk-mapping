@@ -294,18 +294,6 @@ router.delete('/:id', authorize(['admin']), async (req, res) => {
             return res.status(404).json({ error: 'Employee not found' });
         }
 
-        // Explicitly delete attendance logs first (even if DB has cascade, this ensures it)
-        const { error: attendanceError } = await supabase
-            .from('attendance')
-            .delete()
-            .eq('employee_id', req.params.id);
-
-        if (attendanceError) {
-            console.error('Failed to clear attendance logs:', attendanceError);
-            // We continue anyway, or we could throw. Let's throw to be safe.
-            throw attendanceError;
-        }
-
         // Delete employee
         const { error } = await supabase
             .from('employees')
