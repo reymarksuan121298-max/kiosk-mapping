@@ -69,11 +69,11 @@ const getSPVRColor = (spvr: string | undefined) => {
 };
 
 const getMarkerIcon = (spvr: string | undefined, status: 'active' | 'today' | 'inactive' | 'pending') => {
-    // Use grey for pending/absent and inactive, SPVR color for active/today
-    const color = (status === 'pending' || status === 'inactive') ? '#94a3b8' : getSPVRColor(spvr);
+    // Always use SPVR color coding for all statuses
+    const color = getSPVRColor(spvr);
     let pulseClass = '';
 
-    // Add pulse animation only for active status
+    // Add pulse animation only for active status (time in/out)
     if (status === 'active') {
         pulseClass = 'marker-pulse';
     }
@@ -228,15 +228,15 @@ export default function MapPage() {
                     <div className="flex gap-3 text-xs md:text-sm font-medium flex-wrap">
                         <div className="flex items-center gap-2">
                             <span className="w-3 h-3 rounded-full animate-pulse border-2 border-white shadow-md" style={{ backgroundColor: '#10b981' }}></span>
-                            <span>Pulsing = Active</span>
+                            <span>Pulsing = Time In/Out</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ backgroundColor: '#ef4444' }}></span>
-                            <span className="text-muted-foreground">Color = SPVR</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ backgroundColor: '#94a3b8' }}></span>
-                            <span>Grey = Inactive/Absent</span>
+                            <span></span>
+                            <span className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ backgroundColor: '#3b82f6' }}></span>
+                            <span></span>
+                            <span className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ backgroundColor: '#8b5cf6' }}></span>
+                            <span className="text-muted-foreground">Colors = SPVR Groups</span>
                         </div>
                     </div>
                 </CardHeader>
@@ -266,8 +266,8 @@ export default function MapPage() {
                                             center={[loc.employee.latitude!, loc.employee.longitude!]}
                                             radius={80}
                                             pathOptions={{
-                                                color: (loc.map_status === 'pending' || loc.map_status === 'inactive') ? '#94a3b8' : getSPVRColor(loc.employee.spvr),
-                                                fillColor: (loc.map_status === 'pending' || loc.map_status === 'inactive') ? '#94a3b8' : getSPVRColor(loc.employee.spvr),
+                                                color: getSPVRColor(loc.employee.spvr),
+                                                fillColor: getSPVRColor(loc.employee.spvr),
                                                 fillOpacity: 0.1,
                                                 weight: 1,
                                                 dashArray: (loc.map_status === 'active' || loc.map_status === 'inactive') ? undefined : '5,5'
