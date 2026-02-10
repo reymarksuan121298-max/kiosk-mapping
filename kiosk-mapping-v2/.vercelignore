@@ -1,0 +1,21 @@
+# Backend directory (deployed separately)
+backend/
+
+# Node modules
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build files
+dist-backend/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

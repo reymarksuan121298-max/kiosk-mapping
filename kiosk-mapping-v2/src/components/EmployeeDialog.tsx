@@ -21,14 +21,14 @@ interface EmployeeDialogProps {
     totalCount?: number;
 }
 
-const roles = ['IT', 'Creative', 'Admin', 'Safety', 'Agent', 'Teller'];
+const roles = ['Agent'];
 const statuses = ['Active', 'Deactive'];
 const franchises = [
     'Glowing Fortune Gaming OPC',
     'Imperial Gaming OPC',
     '5a Royal Gaming OPC'
 ];
-const areas = ['LDN', 'BAL', 'ILI', 'LALA'];
+const areas = ['LDN', 'BAL', 'ILI', 'LALA', 'SETB'];
 
 const getFranchisePrefix = (franchise: string) => {
     switch (franchise) {
@@ -59,7 +59,7 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
         longitude: undefined,
         franchise: franchises[0],
         status: 'Active',
-        radiusMeters: 200,
+        radiusMeters: 100,
     });
 
     useEffect(() => {
@@ -83,7 +83,7 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                 franchise: franchises[0],
                 area: defaultArea,
                 status: 'Active',
-                radiusMeters: 200,
+                radiusMeters: 100,
             });
         }
         setError('');
@@ -140,7 +140,10 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
             if ((field === 'franchise' || field === 'area') && !employee) {
                 const prefix = getFranchisePrefix(field === 'franchise' ? value : newData.franchise || franchises[0]);
                 const area = field === 'area' ? value : newData.area || areas[0];
-                newData.employeeId = generateFormattedId(prefix, area, totalCount);
+
+                // If area is changed, reset sequence to 00001
+                const sequenceCount = field === 'area' ? 0 : totalCount;
+                newData.employeeId = generateFormattedId(prefix, area, sequenceCount);
             }
 
             return newData;
@@ -281,9 +284,9 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                                 type="number"
                                 value={formData.radiusMeters || ''}
                                 onChange={(e) => handleChange('radiusMeters', e.target.value ? parseInt(e.target.value) : undefined)}
-                                placeholder="e.g. 200"
+                                placeholder="e.g. 100"
                             />
-                            <p className="text-[10px] text-muted-foreground">Default is 200 meters if left blank.</p>
+                            <p className="text-[10px] text-muted-foreground">Default is 100 meters if left blank.</p>
                         </div>
                     </div>
 

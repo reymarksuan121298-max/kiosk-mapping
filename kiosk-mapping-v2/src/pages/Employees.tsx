@@ -60,7 +60,7 @@ export default function EmployeesPage() {
     };
 
     const getBarcodeData = (emp: Employee) => {
-        return `ID:${emp.employeeId}\nName:${emp.fullName}`;
+        return emp.employeeId;
     };
 
     useEffect(() => {
