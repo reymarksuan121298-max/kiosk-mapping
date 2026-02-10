@@ -312,6 +312,31 @@ router.delete('/:id', authorize(['admin']), async (req, res) => {
     }
 });
 
+// Get employee count by area
+router.get('/stats/by-area', async (req, res) => {
+    try {
+        const { area } = req.query;
+
+        if (!area) {
+            return res.status(400).json({ error: 'Area parameter is required' });
+        }
+
+        // Get count for specific area
+        const { count } = await supabase
+            .from('employees')
+            .select('*', { count: 'exact', head: true })
+            .eq('area', area);
+
+        res.json({
+            area,
+            count: count || 0
+        });
+    } catch (error) {
+        console.error('Get area count error:', error);
+        res.status(500).json({ error: 'Failed to fetch area count' });
+    }
+});
+
 // Get employee statistics
 router.get('/stats/summary', async (req, res) => {
     try {

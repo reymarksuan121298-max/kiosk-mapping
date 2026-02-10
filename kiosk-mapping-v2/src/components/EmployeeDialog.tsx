@@ -132,22 +132,39 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
         }
     };
 
-    const handleChange = (field: keyof Employee, value: any) => {
+    const handleChange = async (field: keyof Employee, value: any) => {
         setFormData((prev) => {
             const newData = { ...prev, [field]: value };
-
-            // Auto-generate ID if franchise or area changes and we're adding a new employee
-            if ((field === 'franchise' || field === 'area') && !employee) {
-                const prefix = getFranchisePrefix(field === 'franchise' ? value : newData.franchise || franchises[0]);
-                const area = field === 'area' ? value : newData.area || areas[0];
-
-                // If area is changed, reset sequence to 00001
-                const sequenceCount = field === 'area' ? 0 : totalCount;
-                newData.employeeId = generateFormattedId(prefix, area, sequenceCount);
-            }
-
             return newData;
         });
+
+        // Auto-generate ID if franchise or area changes and we're adding a new employee
+        if ((field === 'franchise' || field === 'area') && !employee) {
+            const prefix = getFranchisePrefix(field === 'franchise' ? value : formData.franchise || franchises[0]);
+            const area = field === 'area' ? value : formData.area || areas[0];
+
+            try {
+                // Fetch count for the specific area
+                const response = await employeeAPI.getCountByArea(area);
+                const areaCount = response.data.count || 0;
+
+                // Generate ID with area-specific count
+                const newId = generateFormattedId(prefix, area, areaCount);
+
+                setFormData((prev) => ({
+                    ...prev,
+                    employeeId: newId
+                }));
+            } catch (error) {
+                console.error('Failed to fetch area count:', error);
+                // Fallback to totalCount if API call fails
+                const newId = generateFormattedId(prefix, area, totalCount);
+                setFormData((prev) => ({
+                    ...prev,
+                    employeeId: newId
+                }));
+            }
+        }
     };
 
     return (

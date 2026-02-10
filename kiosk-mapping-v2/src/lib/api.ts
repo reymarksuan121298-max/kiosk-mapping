@@ -97,6 +97,8 @@ export const employeeAPI = {
 
     getStats: () => api.get('/employees/stats/summary'),
 
+    getCountByArea: (area: string) => api.get('/employees/stats/by-area', { params: { area } }),
+
     uploadPhoto: (file: File) => {
         const formData = new FormData();
         formData.append('photo', file);
