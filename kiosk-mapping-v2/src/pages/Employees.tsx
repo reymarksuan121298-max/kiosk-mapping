@@ -180,6 +180,13 @@ export default function EmployeesPage() {
 
     const downloadCode = () => {
         if (!selectedEmployee) return;
+
+        // Sanitize employee name for filename (remove special characters, replace spaces with underscores)
+        const sanitizedName = selectedEmployee.fullName
+            .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+            .replace(/\s+/g, '_') // Replace spaces with underscores
+            .trim();
+
         const selector = codeType === 'qr' ? '#qr-canvas' : '#barcode-canvas svg';
         const element = document.querySelector(selector);
 
@@ -189,7 +196,7 @@ export default function EmployeesPage() {
                 const url = canvas.toDataURL('image/png');
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `QR_${selectedEmployee.employeeId}.png`;
+                link.download = `QR_${sanitizedName}.png`;
                 link.click();
             } else {
                 // For SVG barcode
@@ -204,7 +211,7 @@ export default function EmployeesPage() {
                     const url = canvas.toDataURL('image/png');
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = `Barcode_${selectedEmployee.employeeId}.png`;
+                    link.download = `Barcode_${sanitizedName}.png`;
                     link.click();
                 };
                 img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
