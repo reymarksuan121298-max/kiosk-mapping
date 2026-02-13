@@ -1,0 +1,278 @@
+# Kiosk Mapping V2 - Deployment Summary
+
+## 🚀 Deployed URLs
+
+### Production Deployments
+- **Frontend Dashboard**: https://kiosk-mapping-v2.vercel.app
+- **Backend API**: https://backend-rho-ashen-76.vercel.app
+- **API Endpoint**: https://backend-rho-ashen-76.vercel.app/api
+
+### Mobile Applications
+- **Employee Attendance App**: Uses production API
+- **Kiosk Monitoring App**: Uses production API
+
+---
+
+## ✅ Deployment Complete
+
+### What Was Fixed (Latest Update)
+
+1. **Environment Variable Configuration**:
+   - Removed old `VITE_API_URL` from Vercel dashboard
+   - Added new `VITE_API_URL=https://backend-rho-ashen-76.vercel.app/api`
+   - Redeployed frontend with correct environment variable
+
+2. **CORS Configuration**:
+   - Backend configured to allow requests from frontend domain
+   - Vercel headers configured for CORS support
+   - Mobile apps supported (requests without origin headers)
+
+3. **Backend Deployment**:
+   - Fixed `vercel.json` (changed `routes` to `rewrites`)
+   - Deployed backend to: `https://backend-rho-ashen-76.vercel.app`
+   - All API endpoints accessible at `/api/*`
+
+4. **Frontend Connection**:
+   - Frontend now correctly uses production backend URL
+   - Environment variable set in Vercel dashboard (not local .env)
+   - Latest deployment includes correct API configuration
+
+---
+
+## 🧪 Testing Your Deployment
+
+Visit **https://kiosk-mapping-v2.vercel.app** and verify:
+
+✅ **Login Page** - Should load without errors
+✅ **Dashboard** - Stats should load from backend
+✅ **Employees Page** - Employee list should display
+✅ **Add Employee** - "Use Current Location" button works
+✅ **QR Codes** - Generate and download QR codes
+✅ **Attendance** - View attendance records
+✅ **Monitoring** - Live map with employee locations
+
+### API Health Check
+Test the backend directly:
+```
+https://backend-rho-ashen-76.vercel.app/api/health
+```
+
+Should return:
+```json
+{
+  "status": "OK",
+  "message": "Kiosk Mapping API is running",
+  "timestamp": "2026-02-03T..."
+}
+```
+
+---
+
+## 📱 Mobile Apps Configuration
+
+### Employee Attendance App
+**Config**: `employee-attendance/src/config.ts`
+```typescript
+export const API_URL = 'https://backend-rho-ashen-76.vercel.app/api';
+```
+
+### Kiosk Monitoring App
+**Config**: `kiosk-monitoring/src/config.ts`
+```typescript
+export const API_URL = 'https://backend-rho-ashen-76.vercel.app/api';
+```
+
+Both apps are configured to use the production backend. Your EAS build will include these settings.
+
+---
+
+## 🔧 Configuration Files
+
+### Backend (`backend/vercel.json`)
+```json
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "server.js",
+            "use": "@vercel/node"
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/server.js"
+        }
+    ],
+    "headers": [
+        {
+            "source": "/api/(.*)",
+            "headers": [
+                { "key": "Access-Control-Allow-Credentials", "value": "true" },
+                { "key": "Access-Control-Allow-Origin", "value": "*" },
+                { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+                { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
+            ]
+        }
+    ]
+}
+```
+
+### Backend CORS (`backend/server.js`)
+```javascript
+const allowedOrigins = [
+    'https://kiosk-mapping-v2.vercel.app',
+    'https://backend-rho-ashen-76.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true); // Mobile apps
+        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+```
+
+### Frontend Environment Variables (Vercel Dashboard)
+**Project**: `kiosk-mapping-v2`
+**Environment**: `Production`
+
+```
+VITE_API_URL = https://backend-rho-ashen-76.vercel.app/api
+```
+
+**Note**: This is set in the Vercel dashboard, NOT in local `.env` files.
+
+---
+
+## 🔐 Backend Environment Variables (Vercel Dashboard)
+
+**Project**: `backend`
+**Environment**: `Production`
+
+Required variables:
+```
+SUPABASE_URL=https://jlrxjtmbwlgrhujewfhd.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+JWT_SECRET=your-jwt-secret
+NODE_ENV=production
+SKIP_TIME_VALIDATION=true
+```
+
+---
+
+## 🎉 Features Now Live
+
+✅ **Employee Management Dashboard**
+- Add, edit, delete employees
+- Auto-generated employee IDs
+- QR code generation
+- Photo uploads
+
+✅ **GPS Location Features**
+- "Use Current Location" button for coordinates
+- Live GPS coordinate display
+- Geofence validation (200m radius)
+- Distance calculations
+
+✅ **Attendance System**
+- Time In/Time Out tracking
+- GPS verification
+- Employee name display on success
+- Detailed error messages with distance info
+
+✅ **Monitoring Dashboard**
+- Live map with employee locations
+- On-duty status tracking
+- Scan history
+- Audit logs
+
+✅ **Mobile Applications**
+- Employee Attendance App (React Native)
+- Kiosk Monitoring App (React Native)
+- Both connected to production backend
+
+---
+
+## 🔄 Redeployment Commands
+
+### Frontend
+```bash
+cd c:\Users\HP\kiosk-mapping\kiosk-mapping-v2
+vercel --prod
+```
+
+### Backend
+```bash
+cd c:\Users\HP\kiosk-mapping\kiosk-mapping-v2\backend
+vercel --prod
+```
+
+### Update Environment Variables
+```bash
+# List environment variables
+vercel env ls
+
+# Add new variable
+vercel env add VARIABLE_NAME production
+
+# Remove variable
+vercel env rm VARIABLE_NAME production
+```
+
+---
+
+## 📊 Deployment Status
+
+| Component | Status | URL |
+|-----------|--------|-----|
+| Frontend | ✅ Live | https://kiosk-mapping-v2.vercel.app |
+| Backend | ✅ Live | https://backend-rho-ashen-76.vercel.app |
+| Employee App | 🔨 Building | EAS Build in progress |
+| Monitoring App | ⚙️ Configured | Ready for build |
+
+---
+
+## 🐛 Troubleshooting
+
+### CORS Errors
+If you see CORS errors:
+1. Check that `VITE_API_URL` is set in Vercel dashboard
+2. Verify backend is deployed and accessible
+3. Check browser console for the actual API URL being called
+
+### Environment Variables Not Working
+1. Environment variables must be set in **Vercel Dashboard**, not local `.env` files
+2. After changing environment variables, **redeploy** the project
+3. Use `vercel env ls` to verify variables are set
+
+### Mobile Apps Not Connecting
+1. Verify `src/config.ts` has correct API URL
+2. Rebuild the app with EAS
+3. Check that backend allows requests without origin headers
+
+---
+
+## 📞 Support
+
+If you encounter issues:
+1. Check browser console for errors
+2. Test backend health endpoint: `https://backend-rho-ashen-76.vercel.app/api/health`
+3. Verify Vercel environment variables are set correctly
+4. Ensure Supabase database is accessible
+
+---
+
+**Last Updated**: 2026-02-03 14:05 PHT
+**Deployment Version**: v2.0.0
+**Status**: ✅ Production Ready

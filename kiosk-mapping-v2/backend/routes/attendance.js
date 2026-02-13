@@ -43,21 +43,21 @@ router.post('/clock-in', async (req, res) => {
             const currentTimeInMinutes = hour * 60 + minute;
 
             if (type === 'Time In') {
-                const startLimit = 6 * 60; // 06:00
-                const endLimit = 8 * 60 + 30; // 08:30
+                const startLimit = 6 * 60; // 06:00 AM
+                const endLimit = 9 * 60; // 09:00 AM
                 if (currentTimeInMinutes < startLimit || currentTimeInMinutes > endLimit) {
-                    console.log(`⏰ Time validation failed: Current time ${hour}:${minute} is outside 6:00-8:30 AM window`);
+                    console.log(`⏰ Time validation failed: Current time ${hour}:${minute} is outside 6:00-9:00 AM window`);
                     return res.status(403).json({
-                        error: "Time In is only allowed between 6:00 AM and 8:30 AM"
+                        error: "Time In is only allowed between 6:00 AM and 9:00 AM"
                     });
                 }
             } else if (type === 'Time Out') {
                 const startLimit = 20 * 60 + 30; // 20:30 (8:30 PM)
-                const endLimit = 21 * 60; // 21:00 (9:00 PM)
+                const endLimit = 21 * 60 + 15; // 21:15 (9:15 PM)
                 if (currentTimeInMinutes < startLimit || currentTimeInMinutes > endLimit) {
-                    console.log(`⏰ Time validation failed: Current time ${hour}:${minute} is outside 8:30-9:00 PM window`);
+                    console.log(`⏰ Time validation failed: Current time ${hour}:${minute} is outside 8:30-9:15 PM window`);
                     return res.status(403).json({
-                        error: "Time Out is only allowed between 8:30 PM and 9:00 PM"
+                        error: "Time Out is only allowed between 8:30 PM and 9:15 PM"
                     });
                 }
             }
@@ -194,6 +194,46 @@ router.post('/clock-in', async (req, res) => {
     } catch (error) {
         console.error('Clock-in error:', error);
         res.status(500).json({ error: 'Failed to record attendance' });
+    }
+});
+
+// Public endpoint - Get last attendance record for an employee
+router.get('/last/:employeeId', async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+
+        console.log('--- GET LAST ATTENDANCE REQUEST ---');
+        console.log('Employee ID:', employeeId);
+
+        if (!employeeId) {
+            return res.status(400).json({ error: 'Employee ID is required' });
+        }
+
+        // Get the last attendance record for this employee
+        const { data: lastAttendance, error } = await supabase
+            .from('attendance')
+            .select('*')
+            .eq('employee_id', employeeId)
+            .order('timestamp', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+            console.error('Error fetching last attendance:', error);
+            return res.status(500).json({ error: 'Failed to fetch last attendance' });
+        }
+
+        if (!lastAttendance) {
+            console.log('No previous attendance found for employee:', employeeId);
+            return res.status(404).json({ error: 'No previous attendance found' });
+        }
+
+        console.log('Last attendance:', lastAttendance);
+
+        res.json(lastAttendance);
+    } catch (error) {
+        console.error('Get last attendance error:', error);
+        res.status(500).json({ error: 'Failed to fetch last attendance' });
     }
 });
 

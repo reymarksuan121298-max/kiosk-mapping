@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Upload, Store } from 'lucide-react';
+import { Loader2, Upload, Store, MapPin } from 'lucide-react';
 
 import {
     Dialog,
@@ -48,6 +48,7 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState('');
+    const [loadingLocation, setLoadingLocation] = useState(false);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const [formData, setFormData] = useState<Employee>({
         employeeId: '',
@@ -165,6 +166,31 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                 }));
             }
         }
+    };
+
+    const handleGetCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            setError('Geolocation is not supported by your browser');
+            return;
+        }
+
+        setLoadingLocation(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                }));
+                setLoadingLocation(false);
+                setError('');
+            },
+            (err) => {
+                setError('Failed to get current location: ' + err.message);
+                setLoadingLocation(false);
+            },
+            { enableHighAccuracy: true }
+        );
     };
 
     return (
@@ -366,28 +392,48 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                     </div>
 
                     {/* GPS Coordinates */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="latitude">Latitude</Label>
-                            <Input
-                                id="latitude"
-                                type="number"
-                                step="any"
-                                value={formData.latitude || ''}
-                                onChange={(e) => handleChange('latitude', e.target.value ? parseFloat(e.target.value) : undefined)}
-                                placeholder="e.g. 14.5995"
-                            />
+                    <div className="space-y-4 pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-sm font-semibold text-primary/80 uppercase tracking-wider">GPS Coordinates</Label>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary transition-all active:scale-95"
+                                onClick={handleGetCurrentLocation}
+                                disabled={loadingLocation}
+                            >
+                                {loadingLocation ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                    <MapPin className="w-3.5 h-3.5" />
+                                )}
+                                Use Current Location
+                            </Button>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="longitude">Longitude</Label>
-                            <Input
-                                id="longitude"
-                                type="number"
-                                step="any"
-                                value={formData.longitude || ''}
-                                onChange={(e) => handleChange('longitude', e.target.value ? parseFloat(e.target.value) : undefined)}
-                                placeholder="e.g. 120.9842"
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="latitude">Latitude</Label>
+                                <Input
+                                    id="latitude"
+                                    type="number"
+                                    step="any"
+                                    value={formData.latitude || ''}
+                                    onChange={(e) => handleChange('latitude', e.target.value ? parseFloat(e.target.value) : undefined)}
+                                    placeholder="e.g. 14.5995"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="longitude">Longitude</Label>
+                                <Input
+                                    id="longitude"
+                                    type="number"
+                                    step="any"
+                                    value={formData.longitude || ''}
+                                    onChange={(e) => handleChange('longitude', e.target.value ? parseFloat(e.target.value) : undefined)}
+                                    placeholder="e.g. 120.9842"
+                                />
+                            </div>
                         </div>
                     </div>
 
