@@ -44,11 +44,11 @@ router.post('/clock-in', async (req, res) => {
 
             if (type === 'Time In') {
                 const startLimit = 6 * 60; // 06:00 AM
-                const endLimit = 9 * 60; // 09:00 AM
+                const endLimit = 8 * 60 + 30; // 08:30 AM
                 if (currentTimeInMinutes < startLimit || currentTimeInMinutes > endLimit) {
-                    console.log(`⏰ Time validation failed: Current time ${hour}:${minute} is outside 6:00-9:00 AM window`);
+                    console.log(`⏰ Time validation failed: Current time ${hour}:${minute} is outside 6:00-8:30 AM window`);
                     return res.status(403).json({
-                        error: "Time In is only allowed between 6:00 AM and 9:00 AM"
+                        error: "Time In is only allowed between 6:00 AM and 8:30 AM"
                     });
                 }
             } else if (type === 'Time Out') {
