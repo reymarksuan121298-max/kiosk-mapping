@@ -78,11 +78,24 @@ app.use((req, res) => {
 });
 
 // Start server
+const os = require('os');
+const networkInterfaces = os.networkInterfaces();
+let localIp = 'localhost';
+
+// Find the first IPv4 address that isn't localhost
+Object.keys(networkInterfaces).forEach((ifname) => {
+    networkInterfaces[ifname].forEach((iface) => {
+        if (iface.family === 'IPv4' && !iface.internal) {
+            localIp = iface.address;
+        }
+    });
+});
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 CORS enabled for: *`);
-    console.log(`🌐 Network: http://192.168.100.17:${PORT}`);
+    console.log(`🔗 CORS enabled`);
+    console.log(`🌐 Network: http://${localIp}:${PORT}`);
 });
 
 module.exports = app;

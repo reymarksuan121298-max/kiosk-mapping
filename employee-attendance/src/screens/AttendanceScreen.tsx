@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import type { BarcodeScanningResult } from 'expo-camera';
 import * as Location from 'expo-location';
+import type { LocationObject } from 'expo-location';
 import { attendanceAPI } from '../services/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, CheckCircle, AlertTriangle, Clock, LogIn, LogOut } from 'lucide-react-native';
@@ -9,12 +11,13 @@ import { MapPin, CheckCircle, AlertTriangle, Clock, LogIn, LogOut } from 'lucide
 export default function AttendanceScreen() {
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
-    const [location, setLocation] = useState<Location.LocationObject | null>(null);
+    const [location, setLocation] = useState<LocationObject | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [capturedId, setCapturedId] = useState<string | null>(null);
     const [scanResult, setScanResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [showActionButtons, setShowActionButtons] = useState(false);
 
     // Update current time every second
     useEffect(() => {
@@ -22,6 +25,19 @@ export default function AttendanceScreen() {
             setCurrentTime(new Date());
         }, 1000);
         return () => clearInterval(timer);
+    }, []);
+
+    const refreshLocation = React.useCallback(async () => {
+        setIsLocating(true);
+        try {
+            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+            setLocation(loc);
+        } catch (e) {
+            console.log('Error fetching location', e);
+            setScanResult({ type: 'error', message: 'Could not fetch GPS location' });
+        } finally {
+            setIsLocating(false);
+        }
     }, []);
 
     useEffect(() => {
@@ -33,20 +49,7 @@ export default function AttendanceScreen() {
             }
             refreshLocation();
         })();
-    }, []);
-
-    const refreshLocation = async () => {
-        setIsLocating(true);
-        try {
-            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-            setLocation(loc);
-        } catch (e) {
-            console.log('Error fetching location', e);
-            setScanResult({ type: 'error', message: 'Could not fetch GPS location' });
-        } finally {
-            setIsLocating(false);
-        }
-    };
+    }, [refreshLocation]);
 
     if (!permission) return <View />;
     if (!permission.granted) {
@@ -60,9 +63,10 @@ export default function AttendanceScreen() {
         );
     }
 
-    const handleBarCodeScanned = ({ data }: { type: string; data: string }) => {
+    const handleBarCodeScanned = (result: { data: string }) => {
         if (scanned || processing || capturedId) return;
 
+        const { data } = result;
         setScanned(true);
         setScanResult(null);
 
@@ -73,12 +77,15 @@ export default function AttendanceScreen() {
             employeeId = idMatch[1].trim();
         }
 
-        // Capture employee ID and automatically process
+        // Capture employee ID and show action buttons
         setCapturedId(employeeId);
-        handleAutoAttendance(employeeId);
+        setShowActionButtons(true);
     };
 
-    const handleAutoAttendance = async (employeeId: string) => {
+    const handleAttendance = async (action: 'IN' | 'OUT') => {
+        if (!capturedId) return;
+
+        setShowActionButtons(false);
         setProcessing(true);
 
         try {
@@ -88,25 +95,10 @@ export default function AttendanceScreen() {
                 return;
             }
 
-            // Check last attendance to determine action
-            let action: 'IN' | 'OUT' = 'IN'; // Default to Time In
-            try {
-                const lastAttendanceResponse = await attendanceAPI.getLastAttendance(employeeId);
-                const lastAttendance = lastAttendanceResponse.data;
-
-                // If last record was Time In, next should be Time Out
-                if (lastAttendance && lastAttendance.remarks === 'Time In') {
-                    action = 'OUT';
-                }
-            } catch (err) {
-                // If no previous attendance found, default to Time In
-                console.log('No previous attendance, defaulting to Time In');
-            }
-
             const type = action === 'IN' ? 'Time In' : 'Time Out';
 
             const payload = {
-                employeeId: employeeId,
+                employeeId: capturedId,
                 type: type as 'Time In' | 'Time Out',
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
@@ -124,14 +116,14 @@ export default function AttendanceScreen() {
 
             setScanResult({
                 type: 'success',
-                message: `${actionText} Successful\n${employeeData.fullName}\nID: ${employeeId}\nTime: ${timeStr}`
+                message: `${actionText} Successful\n${employeeData.fullName}\nID: ${capturedId}\nTime: ${timeStr}`
             });
 
             // Auto Reset
             setTimeout(() => resetScanner(), 3000);
 
         } catch (error: any) {
-            let msg = error.response?.data?.error || error.message || `Failed to record attendance for ID: ${employeeId}`;
+            let msg = error.response?.data?.error || error.message || `Failed to record attendance for ID: ${capturedId}`;
 
             // Add distance info if available
             if (error.response?.data?.distance !== undefined) {
@@ -152,6 +144,7 @@ export default function AttendanceScreen() {
         setScanResult(null);
         setScanned(false);
         setProcessing(false);
+        setShowActionButtons(false);
     };
 
     const formatTime = (date: Date) => {
@@ -217,6 +210,32 @@ export default function AttendanceScreen() {
                             {scanResult.type === 'success' ? <CheckCircle size={48} color="#fff" /> : <AlertTriangle size={48} color="#fff" />}
                             <Text style={styles.resultTitle}>{scanResult.type === 'success' ? 'SUCCESS' : 'ERROR'}</Text>
                             <Text style={styles.resultMessage}>{scanResult.message}</Text>
+                        </View>
+                    ) : showActionButtons ? (
+                        <View style={styles.selectionCard}>
+                            <Text style={styles.selectionTitle}>Select Action</Text>
+                            <Text style={styles.selectionSubtitle}>ID: {capturedId}</Text>
+                            <View style={styles.actionButtons}>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.timeInButton]}
+                                    onPress={() => handleAttendance('IN')}
+                                >
+                                    <LogIn size={48} color="#fff" />
+                                    <Text style={styles.actionButtonText}>TIME IN</Text>
+                                    <Text style={styles.actionButtonSub}>Clock In</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.timeOutButton]}
+                                    onPress={() => handleAttendance('OUT')}
+                                >
+                                    <LogOut size={48} color="#fff" />
+                                    <Text style={styles.actionButtonText}>TIME OUT</Text>
+                                    <Text style={styles.actionButtonSub}>Clock Out</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <TouchableOpacity onPress={resetScanner} style={styles.cancelButton}>
+                                <Text style={styles.cancelText}>Cancel</Text>
+                            </TouchableOpacity>
                         </View>
                     ) : processing ? (
                         <View style={styles.processingCard}>
