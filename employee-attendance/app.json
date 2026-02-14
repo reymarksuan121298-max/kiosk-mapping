@@ -25,7 +25,18 @@
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "package": "com.lordshin123.employeeattendance"
     },
@@ -48,7 +59,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "fd1f8065-a65c-440b-8e13-b0c44a70451b"
+        "projectId": "2ad143d1-0789-4372-9cb9-f00a5231345b"
       }
     },
     "owner": "kambal123",
@@ -56,7 +67,8 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/fd1f8065-a65c-440b-8e13-b0c44a70451b"
+      "enabled": true,
+      "url": "https://u.expo.dev/2ad143d1-0789-4372-9cb9-f00a5231345b"
     }
   }
 }
