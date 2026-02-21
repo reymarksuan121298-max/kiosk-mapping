@@ -68,9 +68,11 @@ export interface Employee {
     longitude?: number;
     franchise?: string;
     area?: string;
+    municipality?: string;
     status: 'Active' | 'Deactive';
     radiusMeters?: number;
     photoUrl?: string;
+    coordinateScreenshotUrl?: string;
     qrCode?: string;
     createdAt?: string;
     updatedAt?: string;
@@ -136,6 +138,10 @@ export const monitoringAPI = {
         api.get('/monitoring/history', { params }),
 
     getDailyMap: () => api.get('/monitoring/daily-map'),
+};
+
+export const supervisorAPI = {
+    getAll: () => api.get('/supervisors')
 };
 
 export default api;

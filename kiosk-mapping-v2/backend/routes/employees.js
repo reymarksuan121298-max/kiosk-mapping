@@ -56,7 +56,9 @@ function mapEmployee(emp) {
         area: emp.area,
         status: emp.status,
         radiusMeters: emp.radius_meters ? parseInt(emp.radius_meters) : 200,
+        municipality: emp.municipality,
         photoUrl: emp.photo_url,
+        coordinateScreenshotUrl: emp.coordinate_screenshot_url,
         qrCode: emp.qr_code,
         createdBy: emp.created_by,
         createdAt: emp.created_at,
@@ -151,7 +153,9 @@ router.post('/', authorize(['admin']), async (req, res) => {
             area,
             status,
             radiusMeters,
+            municipality,
             photoUrl,
+            coordinateScreenshotUrl,
             qrCode
         } = req.body;
 
@@ -187,7 +191,9 @@ router.post('/', authorize(['admin']), async (req, res) => {
                     area: area || 'LDN',
                     status: status || 'Active',
                     radius_meters: radiusMeters || 200,
+                    municipality,
                     photo_url: photoUrl,
+                    coordinate_screenshot_url: coordinateScreenshotUrl,
                     qr_code: qrCode,
                     created_by: req.user.id
                 }
@@ -225,7 +231,9 @@ router.put('/:id', authorize(['admin']), async (req, res) => {
             area,
             status,
             radiusMeters,
+            municipality,
             photoUrl,
+            coordinateScreenshotUrl,
             qrCode
         } = req.body;
 
@@ -255,7 +263,9 @@ router.put('/:id', authorize(['admin']), async (req, res) => {
                 area,
                 status,
                 radius_meters: radiusMeters || 200,
+                municipality,
                 photo_url: photoUrl,
+                coordinate_screenshot_url: coordinateScreenshotUrl,
                 qr_code: qrCode
             })
             .eq('id', req.params.id)

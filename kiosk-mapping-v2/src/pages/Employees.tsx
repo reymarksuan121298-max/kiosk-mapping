@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Download, Edit, Trash2, QrCode, Barcode as BarcodeIcon } from 'lucide-react';
+import { Plus, Search, Download, Edit, Trash2, QrCode, Barcode as BarcodeIcon, FileText, Loader2 } from 'lucide-react';
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
+import { Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +50,8 @@ export default function EmployeesPage() {
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [totalCount, setTotalCount] = useState(0);
     const [codeType, setCodeType] = useState<'qr' | 'barcode'>('qr');
+    const [exporting, setExporting] = useState(false);
+    const [exportProgress, setExportProgress] = useState({ current: 0, total: 0 });
     const [user] = useState(() => {
         const stored = localStorage.getItem('user');
         return stored ? JSON.parse(stored) : null;
@@ -153,7 +157,7 @@ export default function EmployeesPage() {
         // Style header row
         const headerRow = worksheet.getRow(1);
         headerRow.height = 25;
-        headerRow.eachCell((cell) => {
+        headerRow.eachCell((cell: any) => {
             cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
             cell.fill = {
                 type: 'pattern',
@@ -176,6 +180,230 @@ export default function EmployeesPage() {
         setSelectedEmployee(employee);
         setCodeType(type);
         setQrDialogOpen(true);
+    };
+
+    const getEmployeeSection = async (emp: Employee) => {
+        const getImageBuffer = async (url: string) => {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) return null;
+                return await response.arrayBuffer();
+            } catch (e) {
+                console.error("Image fetch error:", e);
+                return null;
+            }
+        };
+
+        const getMunicipalityFromCoords = async (lat?: number, lon?: number) => {
+            if (!lat || !lon) return 'N/A';
+            try {
+                // Using Nominatim (OpenStreetMap) for free reverse geocoding
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                if (!response.ok) return 'N/A';
+                const data = await response.json();
+
+                // Nominatim returns town, city, or municipality in different fields
+                const address = data.address;
+                const municipality = address.municipality || address.city || address.town || address.village || 'N/A';
+                return municipality.toUpperCase();
+            } catch (e) {
+                console.error("Geocoding error:", e);
+                return 'N/A';
+            }
+        };
+
+        // Fetch municipality and images in parallel
+        const [photoBuffer, screenshotBuffer, provinceMunicipality] = await Promise.all([
+            emp.photoUrl ? getImageBuffer(emp.photoUrl) : Promise.resolve(null),
+            emp.coordinateScreenshotUrl ? getImageBuffer(emp.coordinateScreenshotUrl) : Promise.resolve(null),
+            getMunicipalityFromCoords(emp.latitude, emp.longitude)
+        ]);
+
+        return {
+            properties: {
+                page: {
+                    margin: { top: 720, right: 720, bottom: 720, left: 720 },
+                },
+            },
+            children: [
+                new Paragraph({
+                    spacing: { line: 480 },
+                    children: [
+                        new TextRun({ text: "MUNICIPALITY: ", bold: true, size: 28, font: "Lexend" }),
+                        new TextRun({ text: (emp.municipality || provinceMunicipality).toUpperCase(), size: 28, font: "Lexend" }),
+                    ],
+                }),
+                new Paragraph({
+                    spacing: { line: 480 },
+                    children: [
+                        new TextRun({ text: "SPVR: ", bold: true, size: 28, font: "Lexend" }),
+                        new TextRun({ text: emp.spvr || 'N/A', size: 28, font: "Lexend" }),
+                    ],
+                }),
+                new Paragraph({
+                    spacing: { line: 480 },
+                    children: [
+                        new TextRun({ text: "BOOTH NUMBER: ", bold: true, size: 28, font: "Lexend" }),
+                        new TextRun({ text: emp.employeeId, size: 28, font: "Lexend" }),
+                    ],
+                }),
+                new Paragraph({
+                    spacing: { line: 480 },
+                    children: [
+                        new TextRun({ text: "ADDRESS: ", bold: true, size: 28, font: "Lexend" }),
+                        new TextRun({ text: emp.address || '', size: 28, font: "Lexend" }),
+                    ],
+                }),
+                new Paragraph({
+                    spacing: { line: 480 },
+                    children: [
+                        new TextRun({ text: "AGENT: ", bold: true, size: 28, font: "Lexend" }),
+                        new TextRun({ text: emp.fullName, size: 28, font: "Lexend" }),
+                    ],
+                }),
+                new Paragraph({
+                    spacing: { line: 480 },
+                    children: [
+                        new TextRun({ text: "DESCRIPTION: ", bold: true, size: 28, font: "Lexend" }),
+                        new TextRun({ text: "PROPOSED LOCATION OF THE BOOTH/STATION SKETCH MAP OF THE BOOTH/STATION", size: 28, font: "Lexend" }),
+                    ],
+                }),
+                new Paragraph({
+                    spacing: { line: 480 },
+                    children: [
+                        new TextRun({ text: "COORDINATES: ", bold: true, size: 28, font: "Lexend" }),
+                        new TextRun({ text: `Lat ${emp.latitude || ''} Long ${emp.longitude || ''}`, size: 28, font: "Lexend" }),
+                    ],
+                }),
+                new Paragraph({ text: "", spacing: { after: 400, line: 480 } }),
+
+                new Table({
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    borders: {
+                        top: { style: BorderStyle.NONE, size: 0 },
+                        bottom: { style: BorderStyle.NONE, size: 0 },
+                        left: { style: BorderStyle.NONE, size: 0 },
+                        right: { style: BorderStyle.NONE, size: 0 },
+                        insideHorizontal: { style: BorderStyle.NONE, size: 0 },
+                        insideVertical: { style: BorderStyle.NONE, size: 0 },
+                    },
+                    rows: [
+                        new TableRow({
+                            children: [
+                                new TableCell({
+                                    width: { size: 50, type: WidthType.PERCENTAGE },
+                                    children: photoBuffer ? [
+                                        new Paragraph({
+                                            alignment: AlignmentType.CENTER,
+                                            children: [
+                                                new ImageRun({
+                                                    data: new Uint8Array(photoBuffer),
+                                                    transformation: { width: 300, height: 500 },
+                                                    type: "png",
+                                                }),
+                                            ],
+                                        }),
+                                    ] : [new Paragraph({ text: "No Photo Available", alignment: AlignmentType.CENTER })],
+                                }),
+                                new TableCell({
+                                    width: { size: 50, type: WidthType.PERCENTAGE },
+                                    children: screenshotBuffer ? [
+                                        new Paragraph({
+                                            alignment: AlignmentType.CENTER,
+                                            children: [
+                                                new ImageRun({
+                                                    data: new Uint8Array(screenshotBuffer),
+                                                    transformation: { width: 300, height: 500 },
+                                                    type: "png",
+                                                }),
+                                            ],
+                                        }),
+                                    ] : [new Paragraph({ text: "No Photo Available", alignment: AlignmentType.CENTER })],
+                                }),
+                            ],
+                        }),
+                    ],
+                }),
+            ],
+        };
+    };
+
+    const handleBatchExportDocx = async (mergeToSingle: boolean = true) => {
+        if (employees.length === 0) return;
+        const modeText = mergeToSingle ? "single merged DOCX" : "ZIP collection";
+        if (!confirm(`Exporting reports for ${employees.length} employees into a ${modeText}. This may take a while. Continue?`)) return;
+
+        try {
+            setExporting(true);
+            setExportProgress({ current: 0, total: employees.length });
+
+            if (mergeToSingle) {
+                // Group employees by supervisor
+                const groupedBySpvr: Record<string, Employee[]> = {};
+                employees.forEach(emp => {
+                    const spvr = emp.spvr || 'NO_SPVR';
+                    if (!groupedBySpvr[spvr]) groupedBySpvr[spvr] = [];
+                    groupedBySpvr[spvr].push(emp);
+                });
+
+                const spvrNames = Object.keys(groupedBySpvr);
+                setExportProgress({ current: 0, total: employees.length });
+                let processedCount = 0;
+
+                for (const spvr of spvrNames) {
+                    const spvrEmployees = groupedBySpvr[spvr];
+                    const sections = [];
+
+                    for (const emp of spvrEmployees) {
+                        processedCount++;
+                        setExportProgress({ current: processedCount, total: employees.length });
+                        const section = await getEmployeeSection(emp);
+                        sections.push(section);
+                    }
+
+                    const doc = new Document({ sections });
+                    const blob = await Packer.toBlob(doc);
+                    const sanitizedSpvr = spvr.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').trim();
+                    saveAs(blob, `[${sanitizedSpvr}] Reports_${new Date().toISOString().split('T')[0]}.docx`);
+                }
+            } else {
+                const zip = new JSZip();
+                for (let i = 0; i < employees.length; i++) {
+                    const emp = employees[i];
+                    setExportProgress({ current: i + 1, total: employees.length });
+                    const section = await getEmployeeSection(emp);
+                    const doc = new Document({ sections: [section] });
+                    const blob = await Packer.toBlob(doc);
+
+                    const spvrName = (emp.spvr || 'NO_SPVR').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').trim();
+                    const sanitizedName = emp.fullName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').trim();
+
+                    // Organize by folders: SPVR/AgentName.docx
+                    zip.file(`${spvrName}/${sanitizedName}.docx`, blob);
+                }
+                const content = await zip.generateAsync({ type: 'blob' });
+                saveAs(content, `Reports_Batch_By_SPVR_${new Date().toISOString().split('T')[0]}.zip`);
+            }
+        } catch (error) {
+            console.error("Batch export failed:", error);
+            alert("Batch export failed. Please try again.");
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const handleExportDocx = async (emp: Employee) => {
+        try {
+            const section = await getEmployeeSection(emp);
+            const doc = new Document({ sections: [section] });
+            const blob = await Packer.toBlob(doc);
+            const spvrName = (emp.spvr || 'NO_SPVR').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').trim();
+            const sanitizedName = emp.fullName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').trim();
+            saveAs(blob, `[${spvrName}] ${sanitizedName}.docx`);
+        } catch (error) {
+            console.error("Failed to generate DOCX", error);
+            alert("An error occurred while generating the DOCX report.");
+        }
     };
 
     const downloadCode = () => {
@@ -219,7 +447,6 @@ export default function EmployeesPage() {
         }
     };
 
-    const filteredEmployees = employees;
 
     return (
         <div className="p-8 space-y-6">
@@ -232,7 +459,7 @@ export default function EmployeesPage() {
                     </p>
                 </div>
                 {isAdmin && (
-                    <Button onClick={handleAdd} size="lg">
+                    <Button onClick={handleAdd} size={"lg" as any}>
                         <Plus className="mr-2 h-5 w-5" />
                         Add Employee
                     </Button>
@@ -256,27 +483,55 @@ export default function EmployeesPage() {
                         </div>
                         <div className="flex gap-2">
                             <Button
-                                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                                variant={(statusFilter === 'all' ? 'default' : 'outline') as any}
                                 onClick={() => setStatusFilter('all')}
                             >
                                 All
                             </Button>
                             <Button
-                                variant={statusFilter === 'Active' ? 'default' : 'outline'}
+                                variant={(statusFilter === 'Active' ? 'default' : 'outline') as any}
                                 onClick={() => setStatusFilter('Active')}
                             >
                                 Active
                             </Button>
                             <Button
-                                variant={statusFilter === 'Deactive' ? 'default' : 'outline'}
+                                variant={(statusFilter === 'Deactive' ? 'default' : 'outline') as any}
                                 onClick={() => setStatusFilter('Deactive')}
                             >
                                 Inactive
                             </Button>
                         </div>
-                        <Button variant="outline" onClick={handleExportExcel}>
+                        <Button variant={"outline" as any} onClick={handleExportExcel}>
                             <Download className="mr-2 h-4 w-4" />
                             Export Excel
+                        </Button>
+                        <Button
+                            variant={"outline" as any}
+                            onClick={() => handleBatchExportDocx(true)}
+                            disabled={exporting || employees.length === 0}
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                        >
+                            {exporting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    {exportProgress.current}/{exportProgress.total}
+                                    {/* Merging... */}
+                                </>
+                            ) : (
+                                <>
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    Export All (1 DOCX)
+                                </>
+                            )}
+                        </Button>
+                        <Button
+                            variant={"outline" as any}
+                            onClick={() => handleBatchExportDocx(false)}
+                            disabled={exporting || employees.length === 0}
+                            className="text-slate-600 border-slate-200 hover:bg-slate-50"
+                        >
+                            <Download className="mr-2 h-4 w-4" />
+                            Batch ZIP
                         </Button>
                     </div>
                 </CardContent>
@@ -287,13 +542,13 @@ export default function EmployeesPage() {
                 <CardHeader>
                     <CardTitle>Employee Records</CardTitle>
                     <CardDescription>
-                        {filteredEmployees.length} employee{filteredEmployees.length !== 1 ? 's' : ''} found
+                        {employees.length} employee{employees.length !== 1 ? 's' : ''} found
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loading ? (
                         <div className="text-center py-12 text-muted-foreground">Loading...</div>
-                    ) : filteredEmployees.length === 0 ? (
+                    ) : employees.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                             No employees found. Click "Add Employee" to create one.
                         </div>
@@ -315,8 +570,8 @@ export default function EmployeesPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredEmployees.map((employee: Employee) => (
-                                        <tr key={employee.id} className="border-b border-border/50 hover:bg-accent/50 transition-colors">
+                                    {employees.map((employee: Employee) => (
+                                        <tr key={employee.id || employee.employeeId} className="border-b border-border/50 hover:bg-accent/50 transition-colors">
                                             <td className="p-4 font-mono text-sm">{employee.employeeId}</td>
                                             <td className="p-4 font-medium">{employee.fullName}</td>
                                             <td className="p-4 text-sm font-medium text-primary/80">{employee.franchise || '-'}</td>
@@ -362,16 +617,16 @@ export default function EmployeesPage() {
                                                 <td className="p-4">
                                                     <div className="flex gap-2">
                                                         <Button
-                                                            variant="ghost"
-                                                            size="sm"
+                                                            variant={"ghost" as any}
+                                                            size={"sm" as any}
                                                             onClick={() => showCode(employee, 'qr')}
                                                             title="View QR Code"
                                                         >
                                                             <QrCode className="h-4 w-4" />
                                                         </Button>
                                                         <Button
-                                                            variant="ghost"
-                                                            size="sm"
+                                                            variant={"ghost" as any}
+                                                            size={"sm" as any}
                                                             onClick={() => showCode(employee, 'barcode')}
                                                             title="View Barcode"
                                                         >
@@ -384,16 +639,25 @@ export default function EmployeesPage() {
                                                 <td className="p-4">
                                                     <div className="flex gap-2">
                                                         <Button
-                                                            variant="ghost"
-                                                            size="sm"
+                                                            variant={"ghost" as any}
+                                                            size={"sm" as any}
                                                             onClick={() => handleEdit(employee)}
                                                             title="Edit"
                                                         >
                                                             <Edit className="h-4 w-4" />
                                                         </Button>
                                                         <Button
-                                                            variant="ghost"
-                                                            size="sm"
+                                                            variant={"ghost" as any}
+                                                            size={"sm" as any}
+                                                            onClick={() => { handleExportDocx(employee); }}
+                                                            title="Download DOCX Report"
+                                                            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                                                        >
+                                                            <FileText className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant={"ghost" as any}
+                                                            size={"sm" as any}
                                                             onClick={() => handleDelete(employee.id!, employee.fullName)}
                                                             title="Delete"
                                                             className="text-destructive hover:text-destructive"
@@ -437,16 +701,16 @@ export default function EmployeesPage() {
                             </div>
                             <div className="flex bg-muted p-1 rounded-md">
                                 <Button
-                                    variant={codeType === 'qr' ? 'secondary' : 'ghost'}
-                                    size="sm"
+                                    variant={(codeType === 'qr' ? 'secondary' : 'ghost') as any}
+                                    size={"sm" as any}
                                     onClick={() => setCodeType('qr')}
                                     className="h-8"
                                 >
                                     QR
                                 </Button>
                                 <Button
-                                    variant={codeType === 'barcode' ? 'secondary' : 'ghost'}
-                                    size="sm"
+                                    variant={(codeType === 'barcode' ? 'secondary' : 'ghost') as any}
+                                    size={"sm" as any}
                                     onClick={() => setCodeType('barcode')}
                                     className="h-8"
                                 >
@@ -482,7 +746,7 @@ export default function EmployeesPage() {
                                 <Download className="mr-2 h-4 w-4" />
                                 Download {codeType === 'qr' ? 'QR' : 'Barcode'}
                             </Button>
-                            <Button variant="outline" onClick={() => setQrDialogOpen(false)} className="flex-1">
+                            <Button variant={"outline" as any} onClick={() => setQrDialogOpen(false)} className="flex-1">
                                 Close
                             </Button>
                         </div>

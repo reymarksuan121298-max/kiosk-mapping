@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Tesseract from 'tesseract.js';
 import { Loader2, Upload, Store, MapPin } from 'lucide-react';
 
 import {
@@ -12,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { employeeAPI, type Employee } from '@/lib/api';
+import { employeeAPI, supervisorAPI, type Employee } from '@/lib/api';
 
 interface EmployeeDialogProps {
     open: boolean;
@@ -29,6 +30,7 @@ const franchises = [
     '5a Royal Gaming OPC'
 ];
 const areas = ['LDN', 'BAL', 'ILI', 'LALA', 'SETB'];
+const municipalities = ['BALO-I', 'ILIGAN', 'LALA'];
 
 const getFranchisePrefix = (franchise: string) => {
     switch (franchise) {
@@ -48,8 +50,11 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState('');
+    const [status, setStatus] = useState('');
     const [loadingLocation, setLoadingLocation] = useState(false);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+    const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+    const [supervisors, setSupervisors] = useState<{ id: string, name: string }[]>([]);
     const [formData, setFormData] = useState<Employee>({
         employeeId: '',
         fullName: '',
@@ -64,9 +69,23 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
     });
 
     useEffect(() => {
+        const fetchSupervisors = async () => {
+            try {
+                const response = await supervisorAPI.getAll();
+                setSupervisors(response.data.supervisors);
+            } catch (err) {
+                console.error('Failed to fetch supervisors:', err);
+            }
+        };
+
+        if (open) {
+            fetchSupervisors();
+        }
+
         if (employee) {
             setFormData(employee);
             setPhotoPreview(employee.photoUrl || null);
+            setScreenshotPreview(employee.coordinateScreenshotUrl || null);
         } else {
             // Generate initial ID based on first franchise and default area
             const prefix = getFranchisePrefix(franchises[0]);
@@ -76,7 +95,7 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
             setFormData({
                 employeeId: newId,
                 fullName: '',
-                spvr: 'SPVR-',
+                spvr: '',
                 role: 'Agent',
                 address: '',
                 latitude: undefined,
@@ -89,6 +108,7 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
         }
         setError('');
         setPhotoPreview(null);
+        setScreenshotPreview(null);
     }, [employee, open]);
 
     const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,6 +129,54 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
             handleChange('photoUrl', response.data.photoUrl);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Failed to upload photo');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleScreenshotChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setScreenshotPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Upload and OCR
+        try {
+            setUploading(true);
+            const response = await employeeAPI.uploadPhoto(file);
+            handleChange('coordinateScreenshotUrl', response.data.photoUrl);
+
+            // OCR Analysis
+            setStatus('Analyzing screenshot for coordinates...');
+            const result = await Tesseract.recognize(file, 'eng');
+            const text = result.data.text;
+
+            const coordRegex = /(-?\d+\.\d+)/g;
+            const matches = text.match(coordRegex);
+
+            if (matches && matches.length >= 2) {
+                const lat = parseFloat(matches[0]);
+                const lng = parseFloat(matches[1]);
+
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: lat,
+                    longitude: lng
+                }));
+                setStatus('Coordinates detected successfully!');
+                setTimeout(() => setStatus(''), 3000);
+            } else {
+                setStatus('');
+                setError('Could not automatically detect coordinates from screenshot. Please enter them manually.');
+            }
+        } catch (err: any) {
+            setStatus('');
+            setError(err.response?.data?.error || 'Failed to analyze screenshot');
         } finally {
             setUploading(false);
         }
@@ -205,8 +273,15 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {error && (
-                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-300">
                             {error}
+                        </div>
+                    )}
+
+                    {status && (
+                        <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-primary text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            {status}
                         </div>
                     )}
 
@@ -238,13 +313,21 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
 
                         {/* SPVR */}
                         <div className="space-y-2">
-                            <Label htmlFor="spvr">SPVR</Label>
-                            <Input
+                            <Label htmlFor="spvr">SPVR *</Label>
+                            <select
                                 id="spvr"
-                                value={formData.spvr}
+                                value={formData.spvr || ''}
                                 onChange={(e) => handleChange('spvr', e.target.value)}
-                                placeholder="e.g. SPVR-001"
-                            />
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                required
+                            >
+                                <option value="" disabled>Select Supervisor</option>
+                                {supervisors.map((s) => (
+                                    <option key={s.id} value={s.name}>
+                                        {s.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         {/* Role */}
@@ -319,6 +402,24 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                             </select>
                         </div>
 
+                        {/* Municipality */}
+                        <div className="space-y-2">
+                            <Label htmlFor="municipality">Municipality (Optional)</Label>
+                            <select
+                                id="municipality"
+                                value={formData.municipality || ''}
+                                onChange={(e) => handleChange('municipality', e.target.value)}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                <option value="">None</option>
+                                {municipalities.map((m) => (
+                                    <option key={m} value={m}>
+                                        {m}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
                         {/* Radius */}
                         <div className="space-y-2">
                             <Label htmlFor="radiusMeters">Allowed Radius (Meters)</Label>
@@ -346,42 +447,82 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label>Kiosk Location Image</Label>
-                            <div className="flex items-center gap-6 p-4 rounded-xl border border-dashed border-border bg-accent/30 hover:bg-accent/50 transition-all group">
-                                <div className="relative w-24 h-24 rounded-lg overflow-hidden border-2 border-primary/20 bg-background flex items-center justify-center shadow-inner">
-                                    {photoPreview ? (
-                                        <img src={photoPreview} alt="Kiosk Preview" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Store className="w-10 h-10 text-muted-foreground" />
-                                    )}
-                                    {uploading && (
-                                        <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                                        </div>
-                                    )}
-                                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Photo Upload */}
+                            <div className="space-y-2">
+                                <Label>Kiosk Location Image</Label>
+                                <div className="flex items-center gap-4 p-3 rounded-xl border border-dashed border-border bg-accent/30 hover:bg-accent/50 transition-all group">
+                                    <div className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-primary/20 bg-background flex items-center justify-center shadow-inner">
+                                        {photoPreview ? (
+                                            <img src={photoPreview} alt="Kiosk Preview" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Store className="w-8 h-8 text-muted-foreground" />
+                                        )}
+                                        {uploading && (
+                                            <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                                                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                                            </div>
+                                        )}
+                                    </div>
 
-                                <div className="flex-1 space-y-2">
-                                    <h4 className="text-sm font-medium">Upload Image</h4>
-                                    <p className="text-xs text-muted-foreground">JPG, PNG or WEBP. Max 5MB.</p>
-                                    <div className="flex gap-2">
+                                    <div className="flex-1 space-y-1">
+                                        <h4 className="text-xs font-medium">Kiosk Photo</h4>
                                         <Button
                                             type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-8 gap-2"
+                                            {...({ variant: "outline", size: "sm" } as any)}
+                                            className="h-7 text-[10px] gap-1"
                                             onClick={() => document.getElementById('photo-upload')?.click()}
                                             disabled={uploading}
                                         >
-                                            <Upload className="w-3.5 h-3.5" />
-                                            {photoPreview ? 'Change Photo' : 'Choose File'}
+                                            <Upload className="w-3 h-3" />
+                                            {photoPreview ? 'Change' : 'Upload'}
                                         </Button>
                                         <input
                                             id="photo-upload"
                                             type="file"
                                             accept="image/*"
                                             onChange={handlePhotoChange}
+                                            disabled={uploading}
+                                            className="hidden"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Coordinate Screenshot Upload */}
+                            <div className="space-y-2">
+                                <Label>Coordinate Screenshot</Label>
+                                <div className="flex items-center gap-4 p-3 rounded-xl border border-dashed border-border bg-accent/30 hover:bg-accent/50 transition-all group">
+                                    <div className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-primary/20 bg-background flex items-center justify-center shadow-inner">
+                                        {screenshotPreview ? (
+                                            <img src={screenshotPreview} alt="Screenshot Preview" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <MapPin className="w-8 h-8 text-muted-foreground" />
+                                        )}
+                                        {uploading && (
+                                            <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                                                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex-1 space-y-1">
+                                        <h4 className="text-xs font-medium">GPS Screenshot</h4>
+                                        <Button
+                                            type="button"
+                                            {...({ variant: "outline", size: "sm" } as any)}
+                                            className="h-7 text-[10px] gap-1"
+                                            onClick={() => document.getElementById('screenshot-upload')?.click()}
+                                            disabled={uploading}
+                                        >
+                                            <Upload className="w-3 h-3" />
+                                            {screenshotPreview ? 'Change' : 'Upload'}
+                                        </Button>
+                                        <input
+                                            id="screenshot-upload"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleScreenshotChange}
                                             disabled={uploading}
                                             className="hidden"
                                         />
@@ -397,8 +538,7 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                             <Label className="text-sm font-semibold text-primary/80 uppercase tracking-wider">GPS Coordinates</Label>
                             <Button
                                 type="button"
-                                variant="outline"
-                                size="sm"
+                                {...({ variant: "outline", size: "sm" } as any)}
                                 className="h-8 gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary transition-all active:scale-95"
                                 onClick={handleGetCurrentLocation}
                                 disabled={loadingLocation}
@@ -438,7 +578,12 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => onClose()} disabled={loading}>
+                        <Button
+                            type="button"
+                            {...({ variant: "outline" } as any)}
+                            onClick={() => onClose()}
+                            disabled={loading}
+                        >
                             Cancel
                         </Button>
                         <Button type="submit" disabled={loading}>
