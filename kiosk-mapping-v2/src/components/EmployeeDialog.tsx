@@ -122,37 +122,14 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
         };
         reader.readAsDataURL(file);
 
-        // Upload
-        try {
-            setUploading(true);
-            const response = await employeeAPI.uploadPhoto(file);
-            handleChange('photoUrl', response.data.photoUrl);
-        } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to upload photo');
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const handleScreenshotChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Preview
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setScreenshotPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-
         // Upload and OCR
         try {
             setUploading(true);
             const response = await employeeAPI.uploadPhoto(file);
-            handleChange('coordinateScreenshotUrl', response.data.photoUrl);
+            handleChange('photoUrl', response.data.photoUrl);
 
             // OCR Analysis
-            setStatus('Analyzing screenshot for coordinates...');
+            setStatus('Analyzing photo for coordinates...');
             const result = await Tesseract.recognize(file, 'eng');
             const text = result.data.text;
 
@@ -172,11 +149,37 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                 setTimeout(() => setStatus(''), 3000);
             } else {
                 setStatus('');
-                setError('Could not automatically detect coordinates from screenshot. Please enter them manually.');
+                // If no coordinates in photo, we just keep the photo URL
+                // and don't show an error unless it's a real failure
             }
         } catch (err: any) {
             setStatus('');
-            setError(err.response?.data?.error || 'Failed to analyze screenshot');
+            setError(err.response?.data?.error || 'Failed to analyze photo');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleScreenshotChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setScreenshotPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Upload
+        try {
+            setUploading(true);
+            const response = await employeeAPI.uploadPhoto(file);
+            handleChange('coordinateScreenshotUrl', response.data.photoUrl);
+            setStatus('Screenshot uploaded successfully!');
+            setTimeout(() => setStatus(''), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Failed to upload screenshot');
         } finally {
             setUploading(false);
         }
