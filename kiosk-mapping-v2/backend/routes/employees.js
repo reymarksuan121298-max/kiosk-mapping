@@ -393,13 +393,40 @@ router.post('/upload', authorize(['admin']), upload.single('photo'), async (req,
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        const protocol = req.protocol;
-        const host = req.get('host');
-        const photoUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+        const fileExt = path.extname(req.file.originalname);
+        const fileName = `employee-${Date.now()}-${Math.round(Math.random() * 1e9)}${fileExt}`;
+        const filePath = req.file.path;
+
+        // Upload to Supabase Storage
+        const fileBuffer = fs.readFileSync(filePath);
+        const { data, error } = await supabase.storage
+            .from('photos')
+            .upload(fileName, fileBuffer, {
+                contentType: req.file.mimetype,
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (error) {
+            console.error('Supabase storage error:', error);
+            throw error;
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('photos')
+            .getPublicUrl(fileName);
+
+        // Delete local file after upload
+        try {
+            fs.unlinkSync(filePath);
+        } catch (unlinkError) {
+            console.error('Failed to delete temp file:', unlinkError);
+        }
 
         res.json({
             message: 'Photo uploaded successfully',
-            photoUrl
+            photoUrl: publicUrl
         });
     } catch (error) {
         console.error('Upload error:', error);

@@ -312,7 +312,7 @@ export default function EmployeesPage() {
                                                 }),
                                             ],
                                         }),
-                                    ] : [new Paragraph({ text: "No Photo Available", alignment: AlignmentType.CENTER })],
+                                    ] : [new Paragraph({ text: "No GPS Screenshot Available", alignment: AlignmentType.CENTER })],
                                 }),
                             ],
                         }),
