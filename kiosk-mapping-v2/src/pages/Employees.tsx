@@ -573,6 +573,7 @@ export default function EmployeesPage() {
                                             <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">ID</th>
                                             <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Name</th>
                                             <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Franchise</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Municipality</th>
                                             <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Group</th>
                                             <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Role</th>
                                             <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Address</th>
@@ -588,6 +589,7 @@ export default function EmployeesPage() {
                                                 <td className="p-4 font-mono text-sm">{employee.employeeId}</td>
                                                 <td className="p-4 font-medium">{employee.fullName}</td>
                                                 <td className="p-4 text-sm font-medium text-primary/80">{employee.franchise || '-'}</td>
+                                                <td className="p-4 text-sm font-semibold text-emerald-600 uppercase italic">{employee.municipality || '-'}</td>
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-2">
                                                         <span
