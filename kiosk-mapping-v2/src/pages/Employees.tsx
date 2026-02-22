@@ -328,49 +328,64 @@ export default function EmployeesPage() {
         };
     };
 
-    const handleBatchExportDocx = async (mergeToSingle: boolean = true) => {
+    const handleBatchExportDocx = async (mode: 'merged' | 'spvr' | 'individual') => {
         if (employees.length === 0) return;
-        const modeText = mergeToSingle ? "single merged DOCX" : "ZIP collection";
-        if (!confirm(`Exporting reports for ${employees.length} employees into a ${modeText}. This may take a while. Continue?`)) return;
+
+        const modeText =
+            mode === 'merged' ? "a single merged DOCX" :
+                mode === 'spvr' ? "a ZIP containing one DOCX per Supervisor" :
+                    "a ZIP with individual DOCX files for each agent";
+
+        if (!confirm(`Exporting reports for ${employees.length} employees into ${modeText}. This may take a while. Continue?`)) return;
 
         try {
             setExporting(true);
             setExportProgress({ current: 0, total: employees.length });
 
-            if (mergeToSingle) {
-                // Group employees by supervisor
-                const groupedBySpvr: Record<string, Employee[]> = {};
+            const zip = new JSZip();
+            let processedCount = 0;
+
+            if (mode === 'merged') {
+                const sections = [];
+                for (const emp of employees) {
+                    processedCount++;
+                    setExportProgress({ current: processedCount, total: employees.length });
+                    const section = await getEmployeeSection(emp);
+                    sections.push(section);
+                }
+                const doc = new Document({ sections });
+                const blob = await Packer.toBlob(doc);
+                saveAs(blob, `All_Kiosk_Reports_${new Date().toISOString().split('T')[0]}.docx`);
+            }
+            else if (mode === 'spvr') {
+                // Group by supervisor
+                const groups: Record<string, Employee[]> = {};
                 employees.forEach(emp => {
-                    const spvr = emp.spvr || 'NO_SPVR';
-                    if (!groupedBySpvr[spvr]) groupedBySpvr[spvr] = [];
-                    groupedBySpvr[spvr].push(emp);
+                    const s = emp.spvr || 'Unassigned';
+                    if (!groups[s]) groups[s] = [];
+                    groups[s].push(emp);
                 });
 
-                const spvrNames = Object.keys(groupedBySpvr);
-                setExportProgress({ current: 0, total: employees.length });
-                let processedCount = 0;
-
-                for (const spvr of spvrNames) {
-                    const spvrEmployees = groupedBySpvr[spvr];
+                for (const [spvr, groupEmps] of Object.entries(groups)) {
                     const sections = [];
-
-                    for (const emp of spvrEmployees) {
+                    for (const emp of groupEmps) {
                         processedCount++;
                         setExportProgress({ current: processedCount, total: employees.length });
                         const section = await getEmployeeSection(emp);
                         sections.push(section);
                     }
-
                     const doc = new Document({ sections });
                     const blob = await Packer.toBlob(doc);
                     const sanitizedSpvr = spvr.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').trim();
-                    saveAs(blob, `[${sanitizedSpvr}] Reports_${new Date().toISOString().split('T')[0]}.docx`);
+                    zip.file(`[${sanitizedSpvr}]_Reports.docx`, blob);
                 }
-            } else {
-                const zip = new JSZip();
-                for (let i = 0; i < employees.length; i++) {
-                    const emp = employees[i];
-                    setExportProgress({ current: i + 1, total: employees.length });
+                const content = await zip.generateAsync({ type: 'blob' });
+                saveAs(content, `Reports_By_Group_${new Date().toISOString().split('T')[0]}.zip`);
+            }
+            else { // 'individual'
+                for (const emp of employees) {
+                    processedCount++;
+                    setExportProgress({ current: processedCount, total: employees.length });
                     const section = await getEmployeeSection(emp);
                     const doc = new Document({ sections: [section] });
                     const blob = await Packer.toBlob(doc);
@@ -378,11 +393,10 @@ export default function EmployeesPage() {
                     const spvrName = (emp.spvr || 'NO_SPVR').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').trim();
                     const sanitizedName = emp.fullName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').trim();
 
-                    // Organize by folders: SPVR/AgentName.docx
                     zip.file(`${spvrName}/${sanitizedName}.docx`, blob);
                 }
                 const content = await zip.generateAsync({ type: 'blob' });
-                saveAs(content, `Reports_Batch_By_SPVR_${new Date().toISOString().split('T')[0]}.zip`);
+                saveAs(content, `Individual_Reports_${new Date().toISOString().split('T')[0]}.zip`);
             }
         } catch (error) {
             console.error("Batch export failed:", error);
@@ -507,7 +521,7 @@ export default function EmployeesPage() {
                         </Button>
                         <Button
                             variant={"outline" as any}
-                            onClick={() => handleBatchExportDocx(true)}
+                            onClick={() => handleBatchExportDocx('merged')}
                             disabled={exporting || employees.length === 0}
                             className="text-blue-600 border-blue-200 hover:bg-blue-50"
                         >
@@ -515,7 +529,6 @@ export default function EmployeesPage() {
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     {exportProgress.current}/{exportProgress.total}
-                                    {/* Merging... */}
                                 </>
                             ) : (
                                 <>
@@ -526,12 +539,21 @@ export default function EmployeesPage() {
                         </Button>
                         <Button
                             variant={"outline" as any}
-                            onClick={() => handleBatchExportDocx(false)}
+                            onClick={() => handleBatchExportDocx('spvr')}
+                            disabled={exporting || employees.length === 0}
+                            className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                        >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Export per SPVR
+                        </Button>
+                        <Button
+                            variant={"outline" as any}
+                            onClick={() => handleBatchExportDocx('individual')}
                             disabled={exporting || employees.length === 0}
                             className="text-slate-600 border-slate-200 hover:bg-slate-50"
                         >
                             <Download className="mr-2 h-4 w-4" />
-                            Batch ZIP
+                            Individual ZIP
                         </Button>
                     </div>
                 </CardContent>
@@ -681,7 +703,6 @@ export default function EmployeesPage() {
                 open={dialogOpen}
                 onClose={handleDialogClose}
                 employee={editingEmployee}
-                totalCount={totalCount}
             />
 
             {/* QR/Barcode Dialog */}

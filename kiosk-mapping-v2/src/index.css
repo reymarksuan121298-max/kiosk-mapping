@@ -1,5 +1,6 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap');
+@import "leaflet/dist/leaflet.css";
+@import "tailwindcss";
 
 @theme {
   --color-background: hsl(var(--background));
@@ -25,8 +26,6 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 }
-
-@import "leaflet/dist/leaflet.css";
 
 @layer base {
   :root {

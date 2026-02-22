@@ -19,7 +19,6 @@ interface EmployeeDialogProps {
     open: boolean;
     onClose: (success?: boolean) => void;
     employee?: Employee | null;
-    totalCount?: number;
 }
 
 const roles = ['Agent'];
@@ -46,7 +45,7 @@ const generateFormattedId = (prefix: string, area: string, count: number) => {
     return `${prefix}-${area}-${sequence}`;
 };
 
-export default function EmployeeDialog({ open, onClose, employee, totalCount = 0 }: EmployeeDialogProps) {
+export default function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps) {
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState('');
@@ -87,24 +86,56 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
             setPhotoPreview(employee.photoUrl || null);
             setScreenshotPreview(employee.coordinateScreenshotUrl || null);
         } else {
-            // Generate initial ID based on first franchise and default area
-            const prefix = getFranchisePrefix(franchises[0]);
-            const defaultArea = areas[0]; // 'LDN'
-            const newId = generateFormattedId(prefix, defaultArea, totalCount);
+            // 1. Immediate fallback from localStorage
+            const lastSpvr = localStorage.getItem('last_employee_spvr');
+            const lastArea = localStorage.getItem('last_employee_area');
+            const lastMunicipality = localStorage.getItem('last_employee_municipality');
+
+            const initialArea = lastArea || areas[0];
+            const initialFranchise = franchises[0];
+            const prefix = getFranchisePrefix(initialFranchise);
 
             setFormData({
-                employeeId: newId,
+                employeeId: '...', // Loading state
                 fullName: '',
-                spvr: '',
+                spvr: lastSpvr || '',
                 role: 'Agent',
                 address: '',
                 latitude: undefined,
                 longitude: undefined,
-                franchise: franchises[0],
-                area: defaultArea,
+                franchise: initialFranchise,
+                area: initialArea,
+                municipality: lastMunicipality || '',
                 status: 'Active',
                 radiusMeters: 100,
             });
+
+            // 2. Fetch area-specific count and latest data
+            if (open) {
+                const initNewEmployee = async () => {
+                    try {
+                        const [areaRes, lastEmpRes] = await Promise.all([
+                            employeeAPI.getCountByArea(initialArea),
+                            employeeAPI.getAll({ sortBy: 'created_at', sortOrder: 'desc' })
+                        ]);
+
+                        const areaCount = areaRes.data.count || 0;
+                        const initialId = generateFormattedId(prefix, initialArea, areaCount);
+
+                        const latest = lastEmpRes.data.employees?.[0];
+
+                        setFormData(prev => ({
+                            ...prev,
+                            employeeId: initialId,
+                            spvr: latest?.spvr || prev.spvr,
+                            municipality: latest?.municipality || prev.municipality,
+                        }));
+                    } catch (err) {
+                        console.error('Failed to initialize new employee ID:', err);
+                    }
+                };
+                initNewEmployee();
+            }
         }
         setError('');
         setPhotoPreview(null);
@@ -115,46 +146,92 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Preview
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setPhotoPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
+        // Reset and Preview
+        setError('');
+        setPhotoPreview(URL.createObjectURL(file));
 
-        // Upload and OCR
         try {
             setUploading(true);
             const response = await employeeAPI.uploadPhoto(file);
-            handleChange('photoUrl', response.data.photoUrl);
+            const uploadedUrl = response.data.photoUrl;
 
             // OCR Analysis
-            setStatus('Analyzing photo for coordinates...');
+            setStatus('Extracting location data...');
             const result = await Tesseract.recognize(file, 'eng');
             const text = result.data.text;
 
-            const coordRegex = /(-?\d+\.\d+)/g;
-            const matches = text.match(coordRegex);
+            // 1. Try label-based matching (Lat: 7.123, Long: 123.123)
+            const latRegex = /Lat(?:itude)?\s*[:=]?\s*(-?\d+[\.,]\d+)/i;
+            const lngRegex = /(?:Long(?:itude)?|Lon|Lng)\s*[:=]?\s*(-?\d+[\.,]\d+)/i;
 
-            if (matches && matches.length >= 2) {
-                const lat = parseFloat(matches[0]);
-                const lng = parseFloat(matches[1]);
+            const latMatch = text.match(latRegex);
+            const lngMatch = text.match(lngRegex);
 
-                setFormData(prev => ({
-                    ...prev,
-                    latitude: lat,
-                    longitude: lng
-                }));
-                setStatus('Coordinates detected successfully!');
-                setTimeout(() => setStatus(''), 3000);
+            let lat: number | null = null;
+            let lng: number | null = null;
+
+            if (latMatch && lngMatch) {
+                lat = parseFloat(latMatch[1].replace(',', '.'));
+                lng = parseFloat(lngMatch[1].replace(',', '.'));
+            } else {
+                // 2. Fallback: Find any numbers that look like PH coordinates (7.x and 123.x)
+                const numbers = text.match(/-?\d+[\.,]\d+/g);
+                if (numbers && numbers.length >= 2) {
+                    const parsed = numbers.map(n => parseFloat(n.replace(',', '.')));
+                    // PH Latitude is typically 4-20, Longitude is 116-127
+                    const foundLat = parsed.find(n => n > 4 && n < 20);
+                    const foundLng = parsed.find(n => n > 116 && n < 127);
+                    if (foundLat && foundLng) {
+                        lat = foundLat;
+                        lng = foundLng;
+                    }
+                }
+            }
+
+            // 3. Detect Municipality and Area
+            const foundMuni = municipalities.find(m => text.toUpperCase().includes(m.toUpperCase()));
+            const foundArea = areas.find(a => text.toUpperCase().includes(a.toUpperCase()));
+
+            // 4. Extract Address (usually lines containing common address words)
+            const lines = text.split('\n');
+            const addressLine = lines.find(line =>
+                line.includes(',') &&
+                (line.includes('Rd') || line.includes('St') || line.includes('Philippines') || line.includes('Brgy'))
+            );
+
+            let newId = formData.employeeId;
+            if (foundArea && foundArea !== formData.area && !employee) {
+                try {
+                    const prefix = getFranchisePrefix(formData.franchise || franchises[0]);
+                    const areaRes = await employeeAPI.getCountByArea(foundArea);
+                    const areaCount = areaRes.data.count || 0;
+                    newId = generateFormattedId(prefix, foundArea, areaCount);
+                } catch (idErr) {
+                    console.error('Failed to regenerate ID during OCR:', idErr);
+                }
+            }
+
+            setFormData(prev => ({
+                ...prev,
+                photoUrl: uploadedUrl,
+                employeeId: newId,
+                latitude: lat ?? prev.latitude,
+                longitude: lng ?? prev.longitude,
+                municipality: foundMuni ?? prev.municipality,
+                area: foundArea ?? prev.area,
+                address: addressLine?.trim() ?? prev.address
+            }));
+
+            if (lat && lng) {
+                setStatus('Location synced successfully!');
+                setTimeout(() => setStatus(''), 2000);
             } else {
                 setStatus('');
-                // If no coordinates in photo, we just keep the photo URL
-                // and don't show an error unless it's a real failure
+                setError('Coordinates not found in image. Please enter them manually.');
             }
         } catch (err: any) {
             setStatus('');
-            setError(err.response?.data?.error || 'Failed to analyze photo');
+            setError('Failed to analyze image labels.');
         } finally {
             setUploading(false);
         }
@@ -164,22 +241,22 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Preview
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setScreenshotPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
+        setError('');
+        setScreenshotPreview(URL.createObjectURL(file));
 
-        // Upload
         try {
             setUploading(true);
             const response = await employeeAPI.uploadPhoto(file);
-            handleChange('coordinateScreenshotUrl', response.data.photoUrl);
+            const uploadedUrl = response.data.photoUrl;
+
+            setFormData(prev => ({
+                ...prev,
+                coordinateScreenshotUrl: uploadedUrl
+            }));
             setStatus('Screenshot uploaded successfully!');
-            setTimeout(() => setStatus(''), 3000);
+            setTimeout(() => setStatus(''), 2000);
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to upload screenshot');
+            setError('Failed to upload screenshot.');
         } finally {
             setUploading(false);
         }
@@ -195,6 +272,14 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                 await employeeAPI.update(employee.id, formData);
             } else {
                 await employeeAPI.create(formData);
+                // Save values for the next "Add" operation
+                if (formData.spvr) localStorage.setItem('last_employee_spvr', formData.spvr);
+                if (formData.area) localStorage.setItem('last_employee_area', formData.area);
+                if (formData.municipality) {
+                    localStorage.setItem('last_employee_municipality', formData.municipality);
+                } else {
+                    localStorage.removeItem('last_employee_municipality');
+                }
             }
             onClose(true);
         } catch (err: any) {
@@ -212,16 +297,17 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
 
         // Auto-generate ID if franchise or area changes and we're adding a new employee
         if ((field === 'franchise' || field === 'area') && !employee) {
-            const prefix = getFranchisePrefix(field === 'franchise' ? value : formData.franchise || franchises[0]);
-            const area = field === 'area' ? value : formData.area || areas[0];
+            const currentFranchise = field === 'franchise' ? value : formData.franchise;
+            const currentArea = field === 'area' ? value : formData.area;
+            const prefix = getFranchisePrefix(currentFranchise);
 
             try {
                 // Fetch count for the specific area
-                const response = await employeeAPI.getCountByArea(area);
+                const response = await employeeAPI.getCountByArea(currentArea);
                 const areaCount = response.data.count || 0;
 
                 // Generate ID with area-specific count
-                const newId = generateFormattedId(prefix, area, areaCount);
+                const newId = generateFormattedId(prefix, currentArea, areaCount);
 
                 setFormData((prev) => ({
                     ...prev,
@@ -229,12 +315,6 @@ export default function EmployeeDialog({ open, onClose, employee, totalCount = 0
                 }));
             } catch (error) {
                 console.error('Failed to fetch area count:', error);
-                // Fallback to totalCount if API call fails
-                const newId = generateFormattedId(prefix, area, totalCount);
-                setFormData((prev) => ({
-                    ...prev,
-                    employeeId: newId
-                }));
             }
         }
     };
