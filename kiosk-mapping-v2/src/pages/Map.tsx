@@ -174,7 +174,7 @@ export default function MapPage() {
     const todayCount = locations.filter(l => l.scan_time).length;
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
             <style>{`
                 @keyframes pulse {
                     0% {
@@ -194,20 +194,20 @@ export default function MapPage() {
             `}</style>
 
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold tracking-tight">Kiosk Operations Map</h1>
-                    <p className="text-muted-foreground mt-2">
-                        Live status of all registered active kiosks
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Operation Map</h1>
+                    <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
+                        Live status of all registered kiosks
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-2 min-w-[200px]">
-                    <label className="text-sm font-medium text-muted-foreground ml-1">Map Style</label>
+                <div className="flex flex-col gap-2 w-full lg:w-64">
+                    <label className="text-xs font-medium text-muted-foreground ml-1 uppercase tracking-wider">Map Style</label>
                     <select
                         value={mapStyle}
                         onChange={(e) => setMapStyle(e.target.value as MapStyle)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                         {Object.entries(mapStyles).map(([key, style]) => (
                             <option key={key} value={key}>{style.name}</option>
@@ -217,40 +217,40 @@ export default function MapPage() {
             </div>
 
             {/* Map Card */}
-            <Card className="border-border/50 shadow-lg">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <Card className="border-border/50 shadow-lg overflow-hidden">
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 px-4 sm:px-6">
                     <div className="space-y-1">
-                        <CardTitle>Field Overview</CardTitle>
-                        <CardDescription>
+                        <CardTitle className="text-lg">Field Overview</CardTitle>
+                        <CardDescription className="text-xs">
                             {activeCount} active • {inactiveCount} no bot • {pendingCount} pending • {todayCount} processed today
                         </CardDescription>
                     </div>
-                    <div className="flex gap-3 text-xs md:text-sm font-medium flex-wrap">
+                    <div className="flex gap-4 text-[10px] md:text-xs font-medium flex-wrap">
                         <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full animate-pulse border-2 border-white shadow-md" style={{ backgroundColor: '#10b981' }}></span>
-                            <span>Pulsing = Time In/Out</span>
+                            <span className="w-2.5 h-2.5 rounded-full animate-pulse border border-white shadow-sm" style={{ backgroundColor: '#10b981' }}></span>
+                            <span>Live Activity</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ backgroundColor: '#ef4444' }}></span>
-                            <span></span>
-                            <span className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ backgroundColor: '#3b82f6' }}></span>
-                            <span></span>
-                            <span className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ backgroundColor: '#8b5cf6' }}></span>
-                            <span className="text-muted-foreground">Colors = SPVR Groups</span>
+                            <div className="flex -space-x-1">
+                                <span className="w-2.5 h-2.5 rounded-full border border-white shadow-sm bg-red-500"></span>
+                                <span className="w-2.5 h-2.5 rounded-full border border-white shadow-sm bg-blue-500"></span>
+                                <span className="w-2.5 h-2.5 rounded-full border border-white shadow-sm bg-violet-500"></span>
+                            </div>
+                            <span className="text-muted-foreground">SPVR Groups</span>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
                     {loading ? (
-                        <div className="h-[1000px] flex items-center justify-center text-muted-foreground">
-                            Loading map data...
+                        <div className="h-[400px] md:h-[600px] lg:h-[800px] flex items-center justify-center text-muted-foreground bg-muted/10">
+                            Loading tactical map...
                         </div>
                     ) : locations.length === 0 ? (
-                        <div className="h-[1000px] flex items-center justify-center text-muted-foreground bg-muted/20">
+                        <div className="h-[400px] md:h-[600px] lg:h-[800px] flex items-center justify-center text-muted-foreground bg-muted/20">
                             No kiosks found with GPS coordinates.
                         </div>
                     ) : (
-                        <div className="h-[1000px] relative">
+                        <div className="h-[500px] md:h-[700px] lg:h-[900px] relative">
                             <MapContainer
                                 center={center}
                                 zoom={12}

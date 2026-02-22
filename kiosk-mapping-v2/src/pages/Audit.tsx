@@ -77,12 +77,12 @@ export default function AuditPage() {
     };
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold tracking-tight">Audit Logs</h1>
-                    <p className="text-muted-foreground mt-2">
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Audit Logs</h1>
+                    <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
                         Track all system changes and activities
                     </p>
                 </div>
@@ -90,7 +90,8 @@ export default function AuditPage() {
                 {logs.length > 0 && isAdmin && (
                     <Button
                         variant="destructive"
-                        className="gap-2"
+                        size="sm"
+                        className="gap-2 w-full md:w-auto"
                         onClick={handleClearLogs}
                         disabled={loading}
                     >

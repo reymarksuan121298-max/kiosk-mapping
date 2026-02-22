@@ -152,16 +152,16 @@ export default function MonitoringPage() {
     };
 
     return (
-        <div className="p-8 space-y-8 animate-in fade-in duration-500">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
                 <div className="space-y-1">
                     <div className="flex items-center gap-2 text-primary">
                         <Activity className="h-5 w-5 animate-pulse" />
-                        <span className="text-sm font-bold tracking-widest uppercase">Live Monitoring</span>
+                        <span className="text-xs font-bold tracking-widest uppercase">Live Monitoring</span>
                     </div>
-                    <h1 className="text-4xl font-extrabold tracking-tight">Kiosk Attendance</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Kiosk Attendance</h1>
+                    <p className="text-sm md:text-base text-muted-foreground">
                         Real-time tracking of employees currently on duty at kiosks.
                     </p>
                 </div>
@@ -408,44 +408,44 @@ export default function MonitoringPage() {
 
             {/* Location Viewer Dialog */}
             {mapOpen && selectedRecord && (
-                <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-500">
-                    <div className="bg-card w-full max-w-5xl rounded-[2.5rem] shadow-[0_40px_100px_-15px_rgba(0,0,0,0.6)] overflow-hidden border border-white/10 animate-in zoom-in-95 duration-500">
+                <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-500">
+                    <div className="bg-card w-full max-w-5xl rounded-3xl sm:rounded-[2.5rem] shadow-[0_40px_100px_-15px_rgba(0,0,0,0.6)] overflow-hidden border border-white/10 animate-in zoom-in-95 duration-500 max-h-[95vh] flex flex-col">
                         {/* Modal Header */}
-                        <div className="p-8 border-b border-border/50 flex items-center justify-between bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
-                            <div className="flex items-center gap-6">
-                                <div className="w-16 h-16 rounded-[1.25rem] overflow-hidden border-2 border-primary/20 shadow-2xl">
+                        <div className="p-4 sm:p-8 border-b border-border/50 flex items-center justify-between bg-white/80 dark:bg-slate-950/80 backdrop-blur-md shrink-0">
+                            <div className="flex items-center gap-3 sm:gap-6">
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[1.25rem] overflow-hidden border-2 border-primary/20 shadow-2xl shrink-0">
                                     {selectedRecord.employees.photo_url ? (
                                         <img src={selectedRecord.employees.photo_url} className="w-full h-full object-cover" />
                                     ) : (
-                                        <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-black">
+                                        <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary text-xl sm:text-2xl font-black">
                                             {selectedRecord.employees.full_name[0]}
                                         </div>
                                     )}
                                 </div>
-                                <div>
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <h3 className="font-black text-3xl tracking-tighter leading-none">{selectedRecord.employees.full_name}</h3>
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2 sm:gap-3 mb-0.5 sm:mb-1">
+                                        <h3 className="font-black text-xl sm:text-3xl tracking-tighter leading-none truncate">{selectedRecord.employees.full_name}</h3>
                                         {selectedRecord.alert_type ? (
-                                            <span className="px-3 py-1 bg-red-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse">Alert</span>
+                                            <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-red-500 text-white rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest shrink-0">Alert</span>
                                         ) : (
-                                            <span className="px-3 py-1 bg-emerald-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest">Verified</span>
+                                            <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-emerald-500 text-white rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest shrink-0">Live</span>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase tracking-widest">{selectedRecord.employees.role}</span>
-                                        <span className="text-xs text-muted-foreground font-mono flex items-center gap-1.5 font-bold">
-                                            <Clock className="h-3.5 w-3.5" /> SECURED AT {formatTime(selectedRecord.scan_time)}
+                                    <div className="flex items-center gap-2 sm:gap-3">
+                                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[8px] sm:text-[10px] font-bold uppercase tracking-widest shrink-0">{selectedRecord.employees.role}</span>
+                                        <span className="text-[10px] sm:text-xs text-muted-foreground font-mono flex items-center gap-1 sm:gap-1.5 font-bold truncate">
+                                            <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> {formatTime(selectedRecord.scan_time)}
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                            <Button variant="ghost" size="icon" className="rounded-2xl h-14 w-14 hover:bg-primary/10 transition-all active:scale-95 border" onClick={() => setMapOpen(false)}>
-                                <X className="h-7 w-7" />
+                            <Button variant="ghost" size="icon" className="rounded-xl sm:rounded-2xl h-10 w-10 sm:h-14 sm:w-14 hover:bg-primary/10 transition-all active:scale-95 border shrink-0 ml-2" onClick={() => setMapOpen(false)}>
+                                <X className="h-5 w-5 sm:h-7 sm:w-7" />
                             </Button>
                         </div>
 
                         {/* Modal Content / Map */}
-                        <div className="h-[580px] relative">
+                        <div className="flex-1 relative min-h-[300px]">
                             <MapContainer
                                 center={[selectedRecord.latitude, selectedRecord.longitude]}
                                 zoom={16}
@@ -526,31 +526,27 @@ export default function MonitoringPage() {
                             </MapContainer>
 
                             {/* Map Floating Legend */}
-                            <div className="absolute top-8 left-8 z-[1000] space-y-4 pointer-events-none">
-                                <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl p-6 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/20 pointer-events-auto">
-                                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-4">Tactical Legend</h4>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-4 h-4 bg-primary rounded-full shadow-[0_0_15px_rgba(var(--primary),0.5)] border-2 border-white"></div>
-                                            <span className="text-[11px] font-black uppercase">Detection Point</span>
+                            <div className="absolute top-4 left-4 sm:top-8 sm:left-8 z-[1000] space-y-2 sm:space-y-4 pointer-events-none max-w-[150px] sm:max-w-none">
+                                <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/20 pointer-events-auto">
+                                    <h4 className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-muted-foreground mb-2 sm:mb-4">Legend</h4>
+                                    <div className="space-y-2 sm:space-y-3">
+                                        <div className="flex items-center gap-2 sm:gap-4">
+                                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-primary rounded-full border-2 border-white"></div>
+                                            <span className="text-[9px] sm:text-[11px] font-black uppercase">Scan</span>
                                         </div>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-4 h-4 bg-slate-900 dark:bg-white rounded-lg border-2 border-slate-300"></div>
-                                            <span className="text-[11px] font-black uppercase">Assigned Hub</span>
-                                        </div>
-                                        <div className="flex items-center gap-4 opacity-60">
-                                            <div className="w-8 h-1 bg-primary rounded-full"></div>
-                                            <span className="text-[11px] font-black uppercase">Vector Line</span>
+                                        <div className="flex items-center gap-2 sm:gap-4">
+                                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-slate-900 dark:bg-white rounded-lg border border-slate-300"></div>
+                                            <span className="text-[9px] sm:text-[11px] font-black uppercase">Hub</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 {selectedRecord.alert_type && (
-                                    <div className="bg-red-600 text-white p-6 rounded-3xl shadow-2xl flex items-center gap-4 animate-bounce pointer-events-auto border-2 border-white/20">
-                                        <AlertTriangle className="h-8 w-8" />
+                                    <div className="bg-red-600 text-white p-3 sm:p-6 rounded-2xl sm:rounded-3xl shadow-2xl flex items-center gap-2 sm:gap-4 animate-bounce pointer-events-auto border-2 border-white/20">
+                                        <AlertTriangle className="h-4 w-4 sm:h-8 sm:w-8" />
                                         <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Variance Breach</p>
-                                            <p className="text-xl font-black">OUTSIDE RADIUS</p>
+                                            <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest opacity-80 leading-none mb-1">Variance Breach</p>
+                                            <p className="text-xs sm:text-xl font-black leading-none uppercase">Outside Hub</p>
                                         </div>
                                     </div>
                                 )}
@@ -558,29 +554,29 @@ export default function MonitoringPage() {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-8 bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl flex flex-col md:flex-row items-center justify-between gap-8 border-t border-border/10">
-                            <div className="flex items-center gap-6">
+                        <div className="p-4 sm:p-8 bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-8 border-t border-border/10 shrink-0">
+                            <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto">
                                 <div className={cn(
-                                    "px-7 py-4 rounded-[1.5rem] shadow-2xl flex items-center gap-4 transition-all duration-500",
+                                    "px-4 py-2 sm:px-7 sm:py-4 rounded-xl sm:rounded-[1.5rem] shadow-xl flex items-center gap-2 sm:gap-4 transition-all duration-500 flex-1 sm:flex-initial",
                                     selectedRecord.alert_type
-                                        ? "bg-red-600 text-white shadow-red-600/30 scale-105"
+                                        ? "bg-red-600 text-white shadow-red-600/30 sm:scale-105"
                                         : "bg-emerald-600 text-white shadow-emerald-600/30"
                                 )}>
-                                    <Shield className="h-8 w-8" />
+                                    <Shield className="h-5 w-5 sm:h-8 sm:w-8" />
                                     <div>
-                                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] opacity-80 mb-0.5">Integrity Analysis</p>
-                                        <p className="text-2xl font-black italic tracking-tighter">
-                                            {selectedRecord.alert_type ? 'SECURITY BREACH' : 'AUTHENTIC SCAN'}
+                                        <p className="text-[8px] sm:text-[11px] font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] opacity-80 mb-0.5 leading-none">Status</p>
+                                        <p className="text-sm sm:text-2xl font-black italic tracking-tighter leading-none">
+                                            {selectedRecord.alert_type ? 'BREACH' : 'SECURE'}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="bg-slate-100 dark:bg-slate-900 px-7 py-4 rounded-[1.5rem] border border-border/50">
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-0.5">Calculated Distance</p>
-                                    <p className="text-2xl font-black font-mono">{selectedRecord.distance_meters}m Variance</p>
+                                <div className="bg-slate-100 dark:bg-slate-900 px-4 py-2 sm:px-7 sm:py-4 rounded-xl sm:rounded-[1.5rem] border border-border/50 flex-1 sm:flex-initial">
+                                    <p className="text-[8px] sm:text-[11px] font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-muted-foreground mb-0.5 leading-none">Variance</p>
+                                    <p className="text-sm sm:text-2xl font-black font-mono leading-none">{selectedRecord.distance_meters}m</p>
                                 </div>
                             </div>
-                            <Button size="lg" className="rounded-2xl px-16 h-16 font-black text-lg bg-slate-900 hover:bg-slate-800 text-white shadow-2xl transform transition-all active:scale-95" onClick={() => setMapOpen(false)}>
-                                CLOSE TACTICAL VIEW
+                            <Button size="lg" className="w-full sm:w-auto rounded-xl sm:rounded-2xl px-8 sm:px-16 h-12 sm:h-16 font-black text-sm sm:text-lg bg-slate-900 hover:bg-slate-800 text-white shadow-2xl transform transition-all active:scale-95" onClick={() => setMapOpen(false)}>
+                                CLOSE VIEW
                             </Button>
                         </div>
                     </div>

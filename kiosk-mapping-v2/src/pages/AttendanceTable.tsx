@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, MapPin, AlertTriangle, Clock } from 'lucide-react';
+import { Search, Download, MapPin, AlertTriangle, Clock, ChevronRight } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import axios from 'axios';
+import { cn } from '@/lib/utils';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -197,45 +198,45 @@ export default function AttendanceTablePage() {
     };
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold tracking-tight">Attendance Records</h1>
-                    <p className="text-muted-foreground mt-2">
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Attendance</h1>
+                    <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
                         View and manage employee attendance logs
                     </p>
                 </div>
-                <Button onClick={handleExportExcel} size="lg">
+                <Button onClick={handleExportExcel} size="lg" className="w-full md:w-auto">
                     <Download className="mr-2 h-5 w-5" />
                     Export Excel
                 </Button>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>Total Records</CardDescription>
-                        <CardTitle className="text-3xl">{stats.total}</CardTitle>
+                    <CardHeader className="p-3 md:pb-2">
+                        <CardDescription className="text-xs">Total Records</CardDescription>
+                        <CardTitle className="text-xl md:text-3xl">{stats.total}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>Time In</CardDescription>
-                        <CardTitle className="text-3xl text-blue-500">{stats.active}</CardTitle>
+                    <CardHeader className="p-3 md:pb-2">
+                        <CardDescription className="text-xs">Time In</CardDescription>
+                        <CardTitle className="text-xl md:text-3xl text-blue-500">{stats.active}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>Time Out</CardDescription>
-                        <CardTitle className="text-3xl text-orange-500">{stats.inactive}</CardTitle>
+                    <CardHeader className="p-3 md:pb-2">
+                        <CardDescription className="text-xs">Time Out</CardDescription>
+                        <CardTitle className="text-xl md:text-3xl text-orange-500">{stats.inactive}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>With Alerts</CardDescription>
-                        <CardTitle className="text-3xl text-amber-500">{stats.withAlerts}</CardTitle>
+                    <CardHeader className="p-3 md:pb-2">
+                        <CardDescription className="text-xs">Alerts</CardDescription>
+                        <CardTitle className="text-xl md:text-3xl text-amber-500">{stats.withAlerts}</CardTitle>
                     </CardHeader>
                 </Card>
             </div>
@@ -243,8 +244,8 @@ export default function AttendanceTablePage() {
             {/* Filters */}
             <Card>
                 <CardContent className="pt-6">
-                    <div className="flex gap-4 flex-wrap">
-                        <div className="flex-1 min-w-[300px]">
+                    <div className="flex flex-col lg:flex-row gap-4">
+                        <div className="flex-1 w-full">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
@@ -255,51 +256,35 @@ export default function AttendanceTablePage() {
                                 />
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <Button
-                                variant={dateFilter === 'today' ? 'default' : 'outline'}
-                                onClick={() => setDateFilter('today')}
-                            >
-                                Today
-                            </Button>
-                            <Button
-                                variant={dateFilter === 'week' ? 'default' : 'outline'}
-                                onClick={() => setDateFilter('week')}
-                            >
-                                This Week
-                            </Button>
-                            <Button
-                                variant={dateFilter === 'month' ? 'default' : 'outline'}
-                                onClick={() => setDateFilter('month')}
-                            >
-                                This Month
-                            </Button>
-                            <Button
-                                variant={dateFilter === 'all' ? 'default' : 'outline'}
-                                onClick={() => setDateFilter('all')}
-                            >
-                                All Time
-                            </Button>
-                        </div>
-                        <div className="flex gap-2">
-                            <Button
-                                variant={statusFilter === 'all' ? 'default' : 'outline'}
-                                onClick={() => setStatusFilter('all')}
-                            >
-                                All Types
-                            </Button>
-                            <Button
-                                variant={statusFilter === 'Active' ? 'default' : 'outline'}
-                                onClick={() => setStatusFilter('Active')}
-                            >
-                                Time In
-                            </Button>
-                            <Button
-                                variant={statusFilter === 'Inactive' ? 'default' : 'outline'}
-                                onClick={() => setStatusFilter('Inactive')}
-                            >
-                                Time Out
-                            </Button>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="flex gap-1 bg-muted p-1 rounded-lg">
+                                {['today', 'week', 'month', 'all'].map((f) => (
+                                    <button
+                                        key={f}
+                                        onClick={() => setDateFilter(f)}
+                                        className={cn(
+                                            "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                            dateFilter === f ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        {f.charAt(0).toUpperCase() + f.slice(1)}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex gap-1 bg-muted p-1 rounded-lg">
+                                {['all', 'Active', 'Inactive'].map((f) => (
+                                    <button
+                                        key={f}
+                                        onClick={() => setStatusFilter(f)}
+                                        className={cn(
+                                            "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                            statusFilter === f ? (f === 'Active' ? "bg-blue-500 text-white shadow-sm" : f === 'Inactive' ? "bg-orange-500 text-white shadow-sm" : "bg-background text-foreground shadow-sm") : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        {f === 'all' ? 'All Types' : f === 'Active' ? 'Time In' : 'Time Out'}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -321,101 +306,112 @@ export default function AttendanceTablePage() {
                             No attendance records found.
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-border">
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Date & Time</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Employee</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Role</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Area</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Location</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Distance</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Remarks</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredAttendance.map((record: AttendanceRecord) => {
-                                        const emp = getEmployeeData(record);
-                                        return (
-                                            <tr key={record.id} className="border-b border-border/50 hover:bg-accent/50 transition-colors">
-                                                <td className="p-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <div className="overflow-x-auto relative rounded-md border border-border/50">
+                            <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                                <table className="w-full">
+                                    <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm">
+                                        <tr className="border-b border-border">
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Date & Time</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Employee</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Role</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Area</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Status</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Location</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Distance</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredAttendance.map((record: AttendanceRecord) => {
+                                            const emp = getEmployeeData(record);
+                                            return (
+                                                <tr key={record.id} className="border-b border-border/50 hover:bg-accent/50 transition-colors">
+                                                    <td className="p-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <Clock className="h-4 w-4 text-muted-foreground" />
+                                                            <div>
+                                                                <div className="font-medium text-sm">
+                                                                    {new Date(record.scan_time).toLocaleDateString()}
+                                                                </div>
+                                                                <div className="text-xs text-muted-foreground">
+                                                                    {new Date(record.scan_time).toLocaleTimeString()}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4">
                                                         <div>
-                                                            <div className="font-medium text-sm">
-                                                                {new Date(record.scan_time).toLocaleDateString()}
-                                                            </div>
-                                                            <div className="text-xs text-muted-foreground">
-                                                                {new Date(record.scan_time).toLocaleTimeString()}
+                                                            <div className="font-medium">{emp.fullName}</div>
+                                                            <div className="text-xs text-muted-foreground font-mono">
+                                                                {emp.employeeId}
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div>
-                                                        <div className="font-medium">{emp.fullName}</div>
-                                                        <div className="text-xs text-muted-foreground font-mono">
-                                                            {emp.employeeId}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <span className="px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
-                                                        {emp.role}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 text-sm font-medium">
-                                                    {emp.area || '-'}
-                                                </td>
-                                                <td className="p-4">
-                                                    <span
-                                                        className={`px-3 py-1 rounded-full text-xs font-bold ${record.status === 'Active'
-                                                            ? 'bg-blue-500/10 text-blue-500'
-                                                            : 'bg-orange-500/10 text-orange-500'
-                                                            }`}
-                                                    >
-                                                        {record.status === 'Active' ? 'TIME IN' : 'TIME OUT'}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4">
-                                                    {record.latitude && record.longitude ? (
-                                                        <div className="flex items-center gap-1 text-xs font-mono">
-                                                            <MapPin className="h-3 w-3 text-blue-500" />
-                                                            <span className="text-muted-foreground">
-                                                                {record.latitude.toFixed(6)}, {record.longitude.toFixed(6)}
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-muted-foreground text-xs italic">No GPS</span>
-                                                    )}
-                                                </td>
-                                                <td className="p-4">
-                                                    {record.distance_meters !== null ? (
-                                                        <div className="flex items-center gap-1">
-                                                            {record.alert_type && (
-                                                                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                                                            )}
-                                                            <span className={`text-sm ${record.alert_type ? 'text-amber-500 font-medium' : ''}`}>
-                                                                {record.distance_meters}m
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-muted-foreground text-xs">-</span>
-                                                    )}
-                                                </td>
-                                                <td className="p-4 text-sm max-w-[200px] truncate">
-                                                    {record.remarks || '-'}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className="px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
+                                                            {emp.role}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-sm font-medium">
+                                                        {emp.area || '-'}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span
+                                                            className={`px-3 py-1 rounded-full text-xs font-bold ${record.status === 'Active'
+                                                                ? 'bg-blue-500/10 text-blue-500'
+                                                                : 'bg-orange-500/10 text-orange-500'
+                                                                }`}
+                                                        >
+                                                            {record.status === 'Active' ? 'TIME IN' : 'TIME OUT'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        {record.latitude && record.longitude ? (
+                                                            <div className="flex items-center gap-1 text-xs font-mono">
+                                                                <MapPin className="h-3 w-3 text-blue-500" />
+                                                                <span className="text-muted-foreground">
+                                                                    {record.latitude.toFixed(6)}, {record.longitude.toFixed(6)}
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-xs italic">No GPS</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        {record.distance_meters !== null ? (
+                                                            <div className="flex items-center gap-1">
+                                                                {record.alert_type && (
+                                                                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                                                )}
+                                                                <span className={`text-sm ${record.alert_type ? 'text-amber-500 font-medium' : ''}`}>
+                                                                    {record.distance_meters}m
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-xs">-</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-4 text-sm max-w-[200px] truncate">
+                                                        {record.remarks || '-'}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
                 </CardContent>
+                <CardFooter className="bg-muted/30 border-t border-border/50 py-3 px-6 flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Clock className="w-4 h-4" />
+                        <span>Displaying <span className="font-bold text-foreground">{filteredAttendance.length}</span> attendance records</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground italic">
+                        Scroll down to see more records <ChevronRight className="w-3 h-3 rotate-90" />
+                    </div>
+                </CardFooter>
             </Card>
         </div>
     );

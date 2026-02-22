@@ -65,4 +65,18 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 5000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-leaflet': ['leaflet', 'react-leaflet'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-docs': ['docx', 'exceljs', 'file-saver', 'jszip'],
+          'vendor-ocr': ['tesseract.js'],
+        }
+      }
+    }
+  }
 })

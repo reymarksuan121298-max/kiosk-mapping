@@ -368,7 +368,7 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Employee ID */}
                         <div className="space-y-2">
                             <Label htmlFor="employeeId">Employee ID *</Label>
@@ -377,7 +377,7 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                                 value={formData.employeeId}
                                 onChange={(e) => handleChange('employeeId', e.target.value)}
                                 required
-                                className="font-mono"
+                                className="font-mono h-10"
                             />
                         </div>
 
@@ -391,6 +391,7 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                                 required
                                 placeholder="e.g. John Doe"
                                 autoComplete="name"
+                                className="h-10"
                             />
                         </div>
 
@@ -512,6 +513,7 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                                 value={formData.radiusMeters || ''}
                                 onChange={(e) => handleChange('radiusMeters', e.target.value ? parseInt(e.target.value) : undefined)}
                                 placeholder="e.g. 100"
+                                className="h-10"
                             />
                             <p className="text-[10px] text-muted-foreground">Default is 100 meters if left blank.</p>
                         </div>
@@ -527,19 +529,20 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                                 onChange={(e) => handleChange('address', e.target.value)}
                                 placeholder="e.g. 123 Main St, City, Country"
                                 autoComplete="street-address"
+                                className="h-10"
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Photo Upload */}
                             <div className="space-y-2">
                                 <Label>Kiosk Location Image</Label>
                                 <div className="flex items-center gap-4 p-3 rounded-xl border border-dashed border-border bg-accent/30 hover:bg-accent/50 transition-all group">
-                                    <div className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-primary/20 bg-background flex items-center justify-center shadow-inner">
+                                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 border-primary/20 bg-background flex items-center justify-center shadow-inner shrink-0">
                                         {photoPreview ? (
                                             <img src={photoPreview} alt="Kiosk Preview" className="w-full h-full object-cover" />
                                         ) : (
-                                            <Store className="w-8 h-8 text-muted-foreground" />
+                                            <Store className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />
                                         )}
                                         {uploading && (
                                             <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
@@ -553,7 +556,7 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                                         <Button
                                             type="button"
                                             {...({ variant: "outline", size: "sm" } as any)}
-                                            className="h-7 text-[10px] gap-1"
+                                            className="h-8 text-[10px] gap-1 px-3"
                                             onClick={() => document.getElementById('photo-upload')?.click()}
                                             disabled={uploading}
                                         >
@@ -576,11 +579,11 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                             <div className="space-y-2">
                                 <Label>Coordinate Screenshot</Label>
                                 <div className="flex items-center gap-4 p-3 rounded-xl border border-dashed border-border bg-accent/30 hover:bg-accent/50 transition-all group">
-                                    <div className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-primary/20 bg-background flex items-center justify-center shadow-inner">
+                                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 border-primary/20 bg-background flex items-center justify-center shadow-inner shrink-0">
                                         {screenshotPreview ? (
                                             <img src={screenshotPreview} alt="Screenshot Preview" className="w-full h-full object-cover" />
                                         ) : (
-                                            <MapPin className="w-8 h-8 text-muted-foreground" />
+                                            <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />
                                         )}
                                         {uploading && (
                                             <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
@@ -594,7 +597,7 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                                         <Button
                                             type="button"
                                             {...({ variant: "outline", size: "sm" } as any)}
-                                            className="h-7 text-[10px] gap-1"
+                                            className="h-8 text-[10px] gap-1 px-3"
                                             onClick={() => document.getElementById('screenshot-upload')?.click()}
                                             disabled={uploading}
                                         >
@@ -616,13 +619,13 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                     </div>
 
                     {/* GPS Coordinates */}
-                    <div className="space-y-4 pt-2 border-t border-border/50">
-                        <div className="flex items-center justify-between">
+                    <div className="space-y-4 pt-4 border-t border-border/50">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <Label className="text-sm font-semibold text-primary/80 uppercase tracking-wider">GPS Coordinates</Label>
                             <Button
                                 type="button"
                                 {...({ variant: "outline", size: "sm" } as any)}
-                                className="h-8 gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary transition-all active:scale-95"
+                                className="h-9 gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary transition-all active:scale-95 w-full sm:w-auto"
                                 onClick={handleGetCurrentLocation}
                                 disabled={loadingLocation}
                             >
@@ -636,7 +639,7 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="latitude">Latitude</Label>
+                                <Label htmlFor="latitude" className="text-xs">Latitude</Label>
                                 <Input
                                     id="latitude"
                                     type="number"
@@ -644,10 +647,11 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                                     value={formData.latitude || ''}
                                     onChange={(e) => handleChange('latitude', e.target.value ? parseFloat(e.target.value) : undefined)}
                                     placeholder="e.g. 14.5995"
+                                    className="h-10"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="longitude">Longitude</Label>
+                                <Label htmlFor="longitude" className="text-xs">Longitude</Label>
                                 <Input
                                     id="longitude"
                                     type="number"
@@ -655,21 +659,23 @@ export default function EmployeeDialog({ open, onClose, employee }: EmployeeDial
                                     value={formData.longitude || ''}
                                     onChange={(e) => handleChange('longitude', e.target.value ? parseFloat(e.target.value) : undefined)}
                                     placeholder="e.g. 120.9842"
+                                    className="h-10"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <DialogFooter>
+                    <DialogFooter className="flex-col-reverse sm:flex-row gap-2 mt-6">
                         <Button
                             type="button"
                             {...({ variant: "outline" } as any)}
                             onClick={() => onClose()}
                             disabled={loading}
+                            className="w-full sm:w-auto"
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={loading}>
+                        <Button type="submit" disabled={loading} className="w-full sm:w-auto">
                             {loading ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

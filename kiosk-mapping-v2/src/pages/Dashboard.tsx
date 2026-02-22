@@ -66,17 +66,17 @@ export default function DashboardPage() {
     ];
 
     return (
-        <div className="p-8 space-y-8">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
             {/* Header */}
             <div>
-                <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
-                <p className="text-muted-foreground mt-2">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Dashboard</h1>
+                <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
                     Employee management system overview
                 </p>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 {statCards.map((stat) => (
                     <Card key={stat.title} className="relative overflow-hidden">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -88,7 +88,7 @@ export default function DashboardPage() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold">
+                            <div className="text-2xl md:text-3xl font-bold">
                                 {loading ? '...' : stat.value}
                             </div>
                         </CardContent>
@@ -105,36 +105,36 @@ export default function DashboardPage() {
                         Common tasks and shortcuts
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-3">
+                <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     <button
                         onClick={() => window.location.href = '/dashboard/employees'}
-                        className="p-6 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all text-left group"
+                        className="p-4 md:p-6 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all text-left group"
                     >
-                        <Users className="w-8 h-8 text-primary mb-3" />
-                        <h3 className="font-semibold mb-1">Manage Employees</h3>
-                        <p className="text-sm text-muted-foreground">
+                        <Users className="w-6 h-6 md:w-8 md:h-8 text-primary mb-3" />
+                        <h3 className="font-semibold mb-1 text-sm md:text-base">Manage Employees</h3>
+                        <p className="text-xs md:text-sm text-muted-foreground">
                             Add, edit, or remove employee records
                         </p>
                     </button>
 
                     <button
                         onClick={() => window.location.href = '/dashboard/map'}
-                        className="p-6 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all text-left group"
+                        className="p-4 md:p-6 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all text-left group"
                     >
-                        <MapPin className="w-8 h-8 text-primary mb-3" />
-                        <h3 className="font-semibold mb-1">View Map</h3>
-                        <p className="text-sm text-muted-foreground">
+                        <MapPin className="w-6 h-6 md:w-8 md:h-8 text-primary mb-3" />
+                        <h3 className="font-semibold mb-1 text-sm md:text-base">View Map</h3>
+                        <p className="text-xs md:text-sm text-muted-foreground">
                             See employee locations on interactive map
                         </p>
                     </button>
 
                     <button
                         onClick={() => window.location.href = '/dashboard/audit'}
-                        className="p-6 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all text-left group"
+                        className="p-4 md:p-6 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all text-left group"
                     >
-                        <FileText className="w-8 h-8 text-primary mb-3" />
-                        <h3 className="font-semibold mb-1">Audit Logs</h3>
-                        <p className="text-sm text-muted-foreground">
+                        <FileText className="w-6 h-6 md:w-8 md:h-8 text-primary mb-3" />
+                        <h3 className="font-semibold mb-1 text-sm md:text-base">Audit Logs</h3>
+                        <p className="text-xs md:text-sm text-muted-foreground">
                             Track all system changes and activities
                         </p>
                     </button>

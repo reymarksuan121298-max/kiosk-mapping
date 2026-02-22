@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Download, Edit, Trash2, QrCode, Barcode as BarcodeIcon, FileText, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Download, QrCode, Barcode as BarcodeIcon, FileText, Loader2, ChevronRight, Users } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { employeeAPI, type Employee } from '@/lib/api';
 import EmployeeDialog from '@/components/EmployeeDialog';
 import { QRCodeCanvas as QRCode } from 'qrcode.react';
@@ -50,7 +50,6 @@ export default function EmployeesPage() {
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [codeType, setCodeType] = useState<'qr' | 'barcode'>('qr');
     const [exporting, setExporting] = useState(false);
-    const [exportProgress, setExportProgress] = useState({ current: 0, total: 0 });
     const [user] = useState(() => {
         const stored = localStorage.getItem('user');
         return stored ? JSON.parse(stored) : null;
@@ -59,7 +58,7 @@ export default function EmployeesPage() {
     const isAdmin = user?.role === 'admin';
 
     const getCodeData = (emp: Employee) => {
-        return `ID:${emp.employeeId}\nName:${emp.fullName}\nRole:${emp.role}\nFranchise:${emp.franchise || 'N/A'}\nSPVR:${emp.spvr || 'N/A'}`;
+        return `ID:${emp.employeeId} \nName:${emp.fullName} \nRole:${emp.role} \nFranchise:${emp.franchise || 'N/A'} \nSPVR:${emp.spvr || 'N/A'} `;
     };
 
     const getBarcodeData = (emp: Employee) => {
@@ -335,7 +334,6 @@ export default function EmployeesPage() {
 
         try {
             setExporting(true);
-            setExportProgress({ current: 0, total: employees.length });
 
             const zip = new JSZip();
             let processedCount = 0;
@@ -344,7 +342,6 @@ export default function EmployeesPage() {
                 const sections = [];
                 for (const emp of employees) {
                     processedCount++;
-                    setExportProgress({ current: processedCount, total: employees.length });
                     const section = await getEmployeeSection(emp);
                     sections.push(section);
                 }
@@ -365,7 +362,6 @@ export default function EmployeesPage() {
                     const sections = [];
                     for (const emp of groupEmps) {
                         processedCount++;
-                        setExportProgress({ current: processedCount, total: employees.length });
                         const section = await getEmployeeSection(emp);
                         sections.push(section);
                     }
@@ -380,7 +376,6 @@ export default function EmployeesPage() {
             else { // 'individual'
                 for (const emp of employees) {
                     processedCount++;
-                    setExportProgress({ current: processedCount, total: employees.length });
                     const section = await getEmployeeSection(emp);
                     const doc = new Document({ sections: [section] });
                     const blob = await Packer.toBlob(doc);
@@ -458,17 +453,17 @@ export default function EmployeesPage() {
 
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="p-4 md:p-8 space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold tracking-tight">Employees</h1>
-                    <p className="text-muted-foreground mt-2">
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Employees</h1>
+                    <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
                         Manage employee records and information
                     </p>
                 </div>
                 {isAdmin && (
-                    <Button onClick={handleAdd} size={"lg" as any}>
+                    <Button onClick={handleAdd} size={"lg" as any} className="w-full md:w-auto">
                         <Plus className="mr-2 h-5 w-5" />
                         Add Employee
                     </Button>
@@ -476,10 +471,10 @@ export default function EmployeesPage() {
             </div>
 
             {/* Filters */}
-            <Card>
+            <Card className="overflow-hidden">
                 <CardContent className="pt-6">
-                    <div className="flex gap-4 flex-wrap">
-                        <div className="flex-1 min-w-[300px]">
+                    <div className="flex flex-col lg:flex-row gap-4">
+                        <div className="flex-1 w-full lg:min-w-[300px]">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
@@ -490,66 +485,66 @@ export default function EmployeesPage() {
                                 />
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <Button
-                                variant={(statusFilter === 'all' ? 'default' : 'outline') as any}
-                                onClick={() => setStatusFilter('all')}
-                            >
-                                All
-                            </Button>
-                            <Button
-                                variant={(statusFilter === 'Active' ? 'default' : 'outline') as any}
-                                onClick={() => setStatusFilter('Active')}
-                            >
-                                Active
-                            </Button>
-                            <Button
-                                variant={(statusFilter === 'Deactive' ? 'default' : 'outline') as any}
-                                onClick={() => setStatusFilter('Deactive')}
-                            >
-                                Inactive
-                            </Button>
-                        </div>
-                        <Button variant={"outline" as any} onClick={handleExportExcel}>
-                            <Download className="mr-2 h-4 w-4" />
-                            Export Excel
-                        </Button>
-                        <Button
-                            variant={"outline" as any}
-                            onClick={() => handleBatchExportDocx('merged')}
-                            disabled={exporting || employees.length === 0}
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                        >
-                            {exporting ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    {exportProgress.current}/{exportProgress.total}
-                                </>
-                            ) : (
-                                <>
+
+                        <div className="flex flex-wrap gap-2 items-center">
+                            <div className="flex gap-1 bg-muted p-1 rounded-lg w-full sm:w-auto">
+                                <Button
+                                    variant={(statusFilter === 'all' ? 'secondary' : 'ghost') as any}
+                                    size="sm"
+                                    onClick={() => setStatusFilter('all')}
+                                    className="flex-1 sm:px-4"
+                                >
+                                    All
+                                </Button>
+                                <Button
+                                    variant={(statusFilter === 'Active' ? 'secondary' : 'ghost') as any}
+                                    size="sm"
+                                    onClick={() => setStatusFilter('Active')}
+                                    className="flex-1 sm:px-4 text-green-600"
+                                >
+                                    Active
+                                </Button>
+                                <Button
+                                    variant={(statusFilter === 'Deactive' ? 'secondary' : 'ghost') as any}
+                                    size="sm"
+                                    onClick={() => setStatusFilter('Deactive')}
+                                    className="flex-1 sm:px-4 text-red-600"
+                                >
+                                    Inactive
+                                </Button>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 w-full sm:w-auto border-t sm:border-t-0 sm:border-l sm:pl-4 pt-4 sm:pt-0">
+                                <Button variant={"outline" as any} size="sm" onClick={handleExportExcel} className="flex-1 sm:w-auto">
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Excel
+                                </Button>
+                                <Button
+                                    variant={"outline" as any}
+                                    size="sm"
+                                    onClick={() => handleBatchExportDocx('merged')}
+                                    disabled={exporting || employees.length === 0}
+                                    className="flex-1 sm:w-auto text-blue-600 border-blue-200 hover:bg-blue-50"
+                                >
+                                    {exporting ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <FileText className="mr-2 h-4 w-4" />
+                                    )}
+                                    Export All
+                                </Button>
+                                <Button
+                                    variant={"outline" as any}
+                                    size="sm"
+                                    onClick={() => handleBatchExportDocx('spvr')}
+                                    disabled={exporting || employees.length === 0}
+                                    className="flex-1 sm:w-auto text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                                >
                                     <FileText className="mr-2 h-4 w-4" />
-                                    Export All (1 DOCX)
-                                </>
-                            )}
-                        </Button>
-                        <Button
-                            variant={"outline" as any}
-                            onClick={() => handleBatchExportDocx('spvr')}
-                            disabled={exporting || employees.length === 0}
-                            className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                        >
-                            <FileText className="mr-2 h-4 w-4" />
-                            Export per SPVR
-                        </Button>
-                        <Button
-                            variant={"outline" as any}
-                            onClick={() => handleBatchExportDocx('individual')}
-                            disabled={exporting || employees.length === 0}
-                            className="text-slate-600 border-slate-200 hover:bg-slate-50"
-                        >
-                            <Download className="mr-2 h-4 w-4" />
-                            Individual ZIP
-                        </Button>
+                                    By SPVR
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -570,127 +565,138 @@ export default function EmployeesPage() {
                             No employees found. Click "Add Employee" to create one.
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-border">
-                                        <th className="text-left p-4 font-medium text-muted-foreground">ID</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Name</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Franchise</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Group</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Role</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Address</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">GPS</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-                                        {isAdmin && <th className="text-left p-4 font-medium text-muted-foreground">Code</th>}
-                                        {isAdmin && <th className="text-left p-4 font-medium text-muted-foreground">Actions</th>}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {employees.map((employee: Employee) => (
-                                        <tr key={employee.id || employee.employeeId} className="border-b border-border/50 hover:bg-accent/50 transition-colors">
-                                            <td className="p-4 font-mono text-sm">{employee.employeeId}</td>
-                                            <td className="p-4 font-medium">{employee.fullName}</td>
-                                            <td className="p-4 text-sm font-medium text-primary/80">{employee.franchise || '-'}</td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <span
-                                                        className="w-4 h-4 rounded-full border-2 border-white shadow-md"
-                                                        style={{ backgroundColor: getSPVRColor(employee.spvr) }}
-                                                        title={employee.spvr || 'No SPVR'}
-                                                    ></span>
-                                                    <span className="text-xs font-medium text-muted-foreground">
-                                                        {employee.spvr || 'N/A'}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className="px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
-                                                    {employee.role}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-sm max-w-[200px] truncate">{employee.address || '-'}</td>
-                                            <td className="p-4">
-                                                {employee.latitude && employee.longitude ? (
-                                                    <span className="flex flex-col text-[10px] font-mono text-green-500 leading-tight">
-                                                        <span>Lat: {employee.latitude.toFixed(6)}</span>
-                                                        <span>Lon: {employee.longitude.toFixed(6)}</span>
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-muted-foreground text-xs italic">No coordinates</span>
-                                                )}
-                                            </td>
-                                            <td className="p-4">
-                                                <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-medium ${employee.status === 'Active'
-                                                        ? 'bg-green-500/10 text-green-500'
-                                                        : 'bg-red-500/10 text-red-500'
-                                                        }`}
-                                                >
-                                                    {employee.status}
-                                                </span>
-                                            </td>
-                                            {isAdmin && (
-                                                <td className="p-4">
-                                                    <div className="flex gap-2">
-                                                        <Button
-                                                            variant={"ghost" as any}
-                                                            size={"sm" as any}
-                                                            onClick={() => showCode(employee, 'qr')}
-                                                            title="View QR Code"
-                                                        >
-                                                            <QrCode className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            variant={"ghost" as any}
-                                                            size={"sm" as any}
-                                                            onClick={() => showCode(employee, 'barcode')}
-                                                            title="View Barcode"
-                                                        >
-                                                            <BarcodeIcon className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            )}
-                                            {isAdmin && (
-                                                <td className="p-4">
-                                                    <div className="flex gap-2">
-                                                        <Button
-                                                            variant={"ghost" as any}
-                                                            size={"sm" as any}
-                                                            onClick={() => handleEdit(employee)}
-                                                            title="Edit"
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            variant={"ghost" as any}
-                                                            size={"sm" as any}
-                                                            onClick={() => { handleExportDocx(employee); }}
-                                                            title="Download DOCX Report"
-                                                            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
-                                                        >
-                                                            <FileText className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            variant={"ghost" as any}
-                                                            size={"sm" as any}
-                                                            onClick={() => handleDelete(employee.id!, employee.fullName)}
-                                                            title="Delete"
-                                                            className="text-destructive hover:text-destructive"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            )}
+                        <div className="overflow-x-auto relative rounded-md border border-border/50">
+                            <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                                <table className="w-full">
+                                    <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm">
+                                        <tr className="border-b border-border">
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">ID</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Name</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Franchise</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Group</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Role</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Address</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">GPS</th>
+                                            <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Status</th>
+                                            {isAdmin && <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Code</th>}
+                                            {isAdmin && <th className="text-left p-4 font-bold text-foreground text-xs uppercase tracking-wider">Actions</th>}
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {employees.map((employee: Employee) => (
+                                            <tr key={employee.id || employee.employeeId} className="border-b border-border/50 hover:bg-accent/50 transition-colors">
+                                                <td className="p-4 font-mono text-sm">{employee.employeeId}</td>
+                                                <td className="p-4 font-medium">{employee.fullName}</td>
+                                                <td className="p-4 text-sm font-medium text-primary/80">{employee.franchise || '-'}</td>
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <span
+                                                            className="w-4 h-4 rounded-full border-2 border-white shadow-md"
+                                                            style={{ backgroundColor: getSPVRColor(employee.spvr) }}
+                                                            title={employee.spvr || 'No SPVR'}
+                                                        ></span>
+                                                        <span className="text-xs font-medium text-muted-foreground">
+                                                            {employee.spvr || 'N/A'}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
+                                                        {employee.role}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-sm max-w-[200px] truncate">{employee.address || '-'}</td>
+                                                <td className="p-4">
+                                                    {employee.latitude && employee.longitude ? (
+                                                        <span className="flex flex-col text-[10px] font-mono text-green-500 leading-tight">
+                                                            <span>Lat: {employee.latitude.toFixed(6)}</span>
+                                                            <span>Lon: {employee.longitude.toFixed(6)}</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground text-xs italic">No coordinates</span>
+                                                    )}
+                                                </td>
+                                                <td className="p-4">
+                                                    <span
+                                                        className={`px-3 py-1 rounded-full text-xs font-medium ${employee.status === 'Active'
+                                                            ? 'bg-green-500/10 text-green-500'
+                                                            : 'bg-red-500/10 text-red-500'
+                                                            }`}
+                                                    >
+                                                        {employee.status}
+                                                    </span>
+                                                </td>
+                                                {isAdmin && (
+                                                    <td className="p-4">
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                variant={"ghost" as any}
+                                                                size={"sm" as any}
+                                                                onClick={() => showCode(employee, 'qr')}
+                                                                title="View QR Code"
+                                                            >
+                                                                <QrCode className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant={"ghost" as any}
+                                                                size={"sm" as any}
+                                                                onClick={() => showCode(employee, 'barcode')}
+                                                                title="View Barcode"
+                                                            >
+                                                                <BarcodeIcon className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                                {isAdmin && (
+                                                    <td className="p-4">
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                variant={"ghost" as any}
+                                                                size={"sm" as any}
+                                                                onClick={() => handleEdit(employee)}
+                                                                title="Edit"
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant={"ghost" as any}
+                                                                size={"sm" as any}
+                                                                onClick={() => { handleExportDocx(employee); }}
+                                                                title="Download DOCX Report"
+                                                                className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                                                            >
+                                                                <FileText className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant={"ghost" as any}
+                                                                size={"sm" as any}
+                                                                onClick={() => handleDelete(employee.id!, employee.fullName)}
+                                                                title="Delete"
+                                                                className="text-destructive hover:text-destructive"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
                 </CardContent>
+                <CardFooter className="bg-muted/30 border-t border-border/50 py-3 px-6 flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Users className="w-4 h-4" />
+                        <span>Total active directory: <span className="font-bold text-foreground">{employees.length}</span> records</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground italic">
+                        Scroll down to see more records <ChevronRight className="w-3 h-3 rotate-90" />
+                    </div>
+                </CardFooter>
             </Card>
 
             {/* Employee Dialog */}
