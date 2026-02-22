@@ -48,7 +48,6 @@ export default function EmployeesPage() {
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
     const [qrDialogOpen, setQrDialogOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-    const [totalCount, setTotalCount] = useState(0);
     const [codeType, setCodeType] = useState<'qr' | 'barcode'>('qr');
     const [exporting, setExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState({ current: 0, total: 0 });
@@ -81,10 +80,6 @@ export default function EmployeesPage() {
                 sortOrder: 'desc',
             });
             setEmployees(response.data.employees);
-
-            // Also update total stats for ID generation
-            const stats = await employeeAPI.getStats();
-            setTotalCount(stats.data.total);
         } catch (error) {
             console.error('Failed to load employees:', error);
         } finally {
